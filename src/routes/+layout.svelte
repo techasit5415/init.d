@@ -8,7 +8,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>LEASE — infrastructure provisioning</title>
+	<title>init.d — infrastructure provisioning</title>
 </svelte:head>
 
 <div class="min-h-screen bg-app text-app transition-colors duration-300">

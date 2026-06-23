@@ -11,6 +11,11 @@ export interface InstanceSpecs {
 	disk: number; // GB
 }
 
+export interface PassionGroupRef {
+	id: string;
+	name: string;
+}
+
 export interface LeaseInstance {
 	id: string;
 	collectionId: string;
@@ -18,7 +23,11 @@ export interface LeaseInstance {
 	created: string;
 	updated: string;
 	creator_email: string;
-	passion_group: string;
+	// Passion group is a relation in the actual PB schema — the field may
+	// be a bare ID string (list API) or an expanded object (when `?expand`
+	// is used). The display layer normalises both.
+	passion_group: string | PassionGroupRef;
+	expand?: { passion_group?: PassionGroupRef };
 	type: InstanceType;
 	hostname: string;
 	os_template: string;
@@ -33,9 +42,17 @@ export interface LeaseInstance {
 	status: LeaseStatus;
 }
 
+export function passionGroupName(item: LeaseInstance): string {
+	if (typeof item.passion_group === 'object' && item.passion_group) {
+		return item.passion_group.name;
+	}
+	return item.expand?.passion_group?.name ?? item.passion_group;
+}
+
 export interface SessionUser {
 	id: string;
 	email: string;
 	name?: string;
+	username?: string;
 	role: UserRole;
 }

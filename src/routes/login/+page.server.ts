@@ -1,5 +1,7 @@
-// Login server action. Validates against the PocketBase `users` collection
-// and stores the resulting auth cookie for subsequent requests.
+// Login server action — authenticates against the regular `users`
+// collection using username + password (PB identityFields).
+// The `_superusers` collection is reserved for PB administration
+// only and is NOT a login path.
 
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
@@ -12,17 +14,19 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
 	default: async ({ request, locals }) => {
 		const data = await request.formData();
-		const email = String(data.get('email') ?? '').trim().toLowerCase();
+		// Accept either a PB `username` or an `email` — PB's identityFields
+		// resolves whichever matches first.
+		const identity = String(data.get('identity') ?? data.get('username') ?? '').trim();
 		const password = String(data.get('password') ?? '');
 
-		if (!email || !password) {
-			return fail(400, { email, error: 'Email and password are required.' });
+		if (!identity || !password) {
+			return fail(400, { username: identity, error: 'Username/email and password are required.' });
 		}
 
 		try {
-			await locals.pb.collection('users').authWithPassword(email, password);
+			await locals.pb.collection('users').authWithPassword(identity, password);
 		} catch {
-			return fail(401, { email, error: 'Invalid credentials.' });
+			return fail(401, { username: identity, error: 'Invalid username, email, or password.' });
 		}
 
 		throw redirect(303, '/');

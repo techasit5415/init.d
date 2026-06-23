@@ -1,44 +1,49 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
 	import { Cpu, MemoryStick, HardDrive, Send } from '@lucide/svelte';
+	import { untrack } from 'svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	// Live form state. Mirrors the rendered inputs so the preview pane
-	// can re-derive on every keystroke.
-	let passion_group = $state(data.defaults.passion_group ?? '');
-	let type = $state<'vm' | 'container'>(data.defaults.type);
+	// can re-derive on every keystroke. Initial values are seeded from the
+	// server-side defaults — the server stays the source of truth on
+	// validation re-renders (see $effect below). We use `untrack` because
+	// the form fields are intentionally a one-time copy of `data.defaults`;
+	// the user's typing should not be invalidated by reactive prop churn.
+	let passion_group = $state('');
+	let type = $state<'vm' | 'container'>(untrack(() => data.defaults.type));
 	let hostname = $state('');
 	let os_template = $state('');
-	let cpu = $state(data.defaults.cpu);
-	let ram = $state(data.defaults.ram);
-	let disk = $state(data.defaults.disk);
-	let network_type = $state<'local' | 'public'>(data.defaults.network_type);
+	let cpu = $state(untrack(() => data.defaults.cpu));
+	let ram = $state(untrack(() => data.defaults.ram));
+	let disk = $state(untrack(() => data.defaults.disk));
+	let network_type = $state<'local' | 'public'>(untrack(() => data.defaults.network_type));
 	let dns_name = $state('');
 	let ports = $state('');
 	let purpose_notes = $state('');
 	let start_date = $state('');
 	let end_date = $state('');
-	let quantity = $state(data.defaults.quantity);
+	let quantity = $state(untrack(() => data.defaults.quantity));
 
 	// If the server returned previous values (validation error), restore them.
 	$effect(() => {
-		if (form?.values) {
-			passion_group = form.values.passion_group ?? passion_group;
-			type = form.values.type ?? type;
-			hostname = form.values.hostname ?? hostname;
-			os_template = form.values.os_template ?? os_template;
-			cpu = form.values.specs?.cpu ?? cpu;
-			ram = form.values.specs?.ram ?? ram;
-			disk = form.values.specs?.disk ?? disk;
-			network_type = form.values.network_type ?? network_type;
-			dns_name = form.values.dns_name ?? dns_name;
-			ports = form.values.ports ?? ports;
-			purpose_notes = form.values.purpose_notes ?? purpose_notes;
-			start_date = form.values.start_date ?? start_date;
-			end_date = form.values.end_date ?? end_date;
-			quantity = form.values.quantity ?? quantity;
-		}
+		const v = form?.values;
+		if (!v) return;
+		if (v.passion_group) passion_group = v.passion_group;
+		if (v.type) type = v.type;
+		if (v.hostname) hostname = v.hostname;
+		if (v.os_template) os_template = v.os_template;
+		if (v.specs?.cpu) cpu = v.specs.cpu;
+		if (v.specs?.ram) ram = v.specs.ram;
+		if (v.specs?.disk) disk = v.specs.disk;
+		if (v.network_type) network_type = v.network_type;
+		if (v.dns_name) dns_name = v.dns_name;
+		if (v.ports) ports = v.ports;
+		if (v.purpose_notes) purpose_notes = v.purpose_notes;
+		if (v.start_date) start_date = v.start_date;
+		if (v.end_date) end_date = v.end_date;
+		if (v.quantity) quantity = v.quantity;
 	});
 
 	const portsList = $derived(
@@ -48,9 +53,9 @@
 			.filter(Boolean)
 	);
 
-	const errors = $derived(form?.errors ?? {});
+	const errors = $derived<Record<string, string>>(form?.errors ?? {});
 	const fmtDate = (d: string) => (d ? new Date(d).toLocaleDateString() : '—');
-	const leaseDays = $derived(() => {
+	const leaseDays = $derived.by(() => {
 		if (!start_date || !end_date) return null;
 		const ms = new Date(end_date).getTime() - new Date(start_date).getTime();
 		return Math.max(0, Math.ceil(ms / 86_400_000));
@@ -95,14 +100,12 @@
 					<span class="mb-1 block font-mono text-[11px] uppercase tracking-widest text-muted-app"
 						>Passion group / project</span
 					>
-					<input
-						class="w-full"
-						type="text"
-						name="passion_group"
-						bind:value={passion_group}
-						placeholder="e.g. distributed-systems-club"
-						required
-					/>
+					<select name="passion_group" bind:value={passion_group} class="w-full" required>
+						<option value="" disabled>— pick a group —</option>
+						{#each data.passionGroups as group (group.id)}
+							<option value={group.id}>{group.name}</option>
+						{/each}
+					</select>
 					{#if errors.passion_group}
 						<p class="mt-1 text-xs" style="color: var(--danger)">{errors.passion_group}</p>
 					{/if}
@@ -425,7 +428,7 @@
 					</div>
 					<div class="flex items-baseline justify-between gap-2">
 						<dt class="text-muted-app">duration</dt>
-						<dd class="text-right text-accent">{leaseDays() ?? '—'} days</dd>
+						<dd class="text-right text-accent">{leaseDays ?? '—'} days</dd>
 					</div>
 					<div class="flex items-baseline justify-between gap-2">
 						<dt class="text-muted-app">quantity</dt>

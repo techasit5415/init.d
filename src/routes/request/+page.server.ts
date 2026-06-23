@@ -1,5 +1,6 @@
 // Request page server logic:
-//   1. Load — guards anonymous users and exposes the resolved email.
+//   1. Load — guards anonymous users, exposes the resolved email, and
+//      lists the available passion groups (relation source).
 //   2. default action — validates the form payload and INSERTs a row
 //      into PocketBase with status = "pending". No hypervisor calls.
 
@@ -8,7 +9,8 @@ import type { Actions, PageServerLoad } from './$types';
 import type {
 	InstanceType,
 	LeaseInstance,
-	NetworkType
+	NetworkType,
+	PassionGroupRef
 } from '$lib/types';
 
 const TYPES: InstanceType[] = ['vm', 'container'];
@@ -25,8 +27,21 @@ function asInt(v: FormDataEntryValue | null, fallback: number): number {
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) throw redirect(303, '/login');
+
+	let passionGroups: PassionGroupRef[] = [];
+	try {
+		const list = await locals.pb.collection('passion_group').getList<PassionGroupRef>(1, 200, {
+			sort: 'name',
+			fields: 'id,name'
+		});
+		passionGroups = list.items;
+	} catch {
+		// passion_group collection might not be reachable; show empty list
+	}
+
 	return {
 		email: locals.user.email,
+		passionGroups,
 		defaults: {
 			type: 'vm' as InstanceType,
 			network_type: 'local' as NetworkType,
@@ -44,7 +59,6 @@ export const actions: Actions = {
 
 		const fd = await request.formData();
 
-		// Pull every field, normalize and validate.
 		const passion_group = asString(fd.get('passion_group'));
 		const type = asString(fd.get('type')) as InstanceType;
 		const hostname = asString(fd.get('hostname')).toLowerCase();
@@ -79,7 +93,6 @@ export const actions: Actions = {
 		if (!Number.isFinite(quantity) || quantity < 1 || quantity > 64)
 			errors.quantity = '1 – 64 units.';
 
-		// Validate ports — comma separated integers, each 1-65535.
 		if (ports) {
 			const list = ports
 				.split(',')
@@ -90,6 +103,32 @@ export const actions: Actions = {
 		}
 
 		if (Object.keys(errors).length) {
+			return fail(400, {
+				errors,
+				values: {
+					passion_group,
+					type,
+					hostname,
+					os_template,
+					specs: { cpu, ram, disk },
+					network_type,
+					dns_name,
+					ports,
+					purpose_notes,
+					start_date,
+					end_date,
+					quantity
+				}
+			});
+		}
+
+		// Verify the passion_group exists so we don't insert a dangling
+		// relation — PB would reject it anyway, but a friendly error is
+		// nicer than the default 400.
+		try {
+			await locals.pb.collection('passion_group').getOne(passion_group);
+		} catch {
+			const errors: Record<string, string> = { passion_group: 'Unknown passion group.' };
 			return fail(400, {
 				errors,
 				values: {
@@ -129,3 +168,4 @@ export const actions: Actions = {
 		throw redirect(303, `/status#${record.id}`);
 	}
 };
+

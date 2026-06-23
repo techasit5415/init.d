@@ -13,13 +13,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 	try {
 		const list = await locals.pb.collection('instances').getList<LeaseInstance>(1, 200, {
 			filter: `creator_email = "${email.replace(/"/g, '\\"')}"`,
-			sort: '-created'
+			sort: '-created',
+			expand: 'passion_group'
 		});
 		return { items: list.items, email };
 	} catch {
-		// If the rule rejects the query (e.g. logged in user without an
-		// email-bound rule on the collection) fall back to an empty list
-		// rather than crash the page.
 		return { items: [], email };
 	}
 };

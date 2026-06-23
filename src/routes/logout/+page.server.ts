@@ -1,7 +1,7 @@
 // Sign-out endpoint — clears the PocketBase auth cookie and bounces home.
 import { redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
-import { AUTH_COOKIE } from '$lib/pb';
+import { AUTH_COOKIE } from '$lib/constants';
 
 export const actions: Actions = {
 	default: async ({ locals, cookies }) => {

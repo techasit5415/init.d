@@ -19,7 +19,7 @@
 	<div class="mx-auto flex h-14 max-w-[1400px] items-center justify-between gap-6 px-6">
 		<a href="/" class="flex items-center gap-2 font-mono text-sm tracking-tight text-app">
 			<Server class="h-4 w-4 text-accent" />
-			<span class="font-semibold">LEASE</span>
+			<span class="font-semibold">init.d</span>
 			<span class="text-muted-app">/ infrastructure provisioning</span>
 		</a>
 

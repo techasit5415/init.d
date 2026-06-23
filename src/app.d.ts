@@ -11,6 +11,7 @@ declare global {
 				id: string;
 				email: string;
 				name?: string;
+				username?: string;
 				role: 'admin' | 'user';
 			} | null;
 		}

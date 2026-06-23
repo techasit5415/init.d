@@ -17,5 +17,14 @@ export default defineConfig({
 			// See https://svelte.dev/docs/kit/adapters for more information about adapters.
 			adapter: adapter()
 		})
-	]
+	],
+	server: {
+		// Vite 8 restricts SSR file reads to the project root. SvelteKit
+		// generates runtime files in `.svelte-kit/generated/...` outside
+		// the source tree — we need to explicitly allow that directory
+		// for the SSR module loader to find `internal.js`.
+		fs: {
+			allow: ['..', '.svelte-kit', '.svelte-kit/**']
+		}
+	}
 });

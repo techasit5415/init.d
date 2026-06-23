@@ -5,7 +5,7 @@
 	const user = $derived(page.data.user);
 	const isAdmin = $derived(user?.role === 'admin');
 
-	const features = [
+	const features = $derived([
 		{
 			href: '/request',
 			icon: FilePlus2,
@@ -28,11 +28,11 @@
 					}
 				]
 			: [])
-	];
+	]);
 </script>
 
 <section class="py-12">
-	<p class="font-mono text-xs uppercase tracking-[0.2em] text-accent">// LEASE</p>
+	<p class="font-mono text-xs uppercase tracking-[0.2em] text-accent">// init.d</p>
 	<h1 class="mt-3 text-4xl font-semibold tracking-tight text-app">
 		Infrastructure provisioning, written down before it is built.
 	</h1>
@@ -54,16 +54,22 @@
 </section>
 
 <section class="mt-12 grid gap-px overflow-hidden rounded-lg border border-app bg-app sm:grid-cols-2">
-	{#each features as feature (feature.href)}
-		<a
-			href={feature.href}
-			class="group flex flex-col gap-3 bg-surface p-6 transition-colors duration-300 hover:bg-elevated"
-		>
-			<div class="flex items-center gap-2">
-				<feature.icon class="h-4 w-4 text-accent" />
-				<span class="font-mono text-xs uppercase tracking-widest text-app">{feature.title}</span>
-			</div>
-			<p class="text-sm text-secondary-app">{feature.body}</p>
-		</a>
-	{/each}
+    {#each features as feature (feature.href)}
+        <a
+            href={feature.href}
+            /* 1. ลบ ml-2 ออก เพื่อให้ Grid alignment เป๊ะ */
+            /* 2. เปลี่ยน gap- เป็น gap-3 เพิ่มระยะห่างระหว่างหัวข้อและคำอธิบาย */
+            class="group flex flex-col gap-3 bg-surface p-6 transition-colors duration-300 hover:bg-elevated"
+        >
+            <div class="flex items-center gap-2">
+                <feature.icon class="h-5 w-5 text-accent transition-transform duration-300 group-hover:scale-110" />
+                
+                <span class="font-mono text-xs font-semibold uppercase tracking-widest text-primary">{feature.title}</span>
+            </div>
+            
+            <p class="text-sm leading-relaxed text-secondary-app group-hover:text-primary transition-colors duration-300">
+                {feature.body}
+            </p>
+        </a>
+    {/each}
 </section>
