@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FilePlus2, Activity, ShieldCheck, Server } from '@lucide/svelte';
+	import { FilePlus2, Activity, ShieldCheck, Server, ArrowRight } from '@lucide/svelte';
 	import { page } from '$app/state';
 
 	const user = $derived(page.data.user);
@@ -45,31 +45,51 @@
 	{#if !user}
 		<a
 			href="/login"
-			class="mt-8 inline-flex h-10 items-center gap-2 rounded-md bg-accent px-5 font-mono text-xs uppercase tracking-widest text-app transition-colors duration-300 hover:bg-accent-soft hover:text-accent"
+			class="group mt-8 inline-flex h-10 items-center gap-2 rounded-md bg-accent px-5 font-mono text-xs uppercase tracking-widest text-zinc-950 shadow-sm transition-all duration-300 hover:gap-3 hover:shadow-[0_0_24px_-4px_var(--accent)]"
 		>
 			<Server class="h-4 w-4" />
 			Sign in to start
+			<ArrowRight
+				class="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5"
+			/>
 		</a>
 	{/if}
 </section>
 
 <section class="mt-12 grid gap-px overflow-hidden rounded-lg border border-app bg-app sm:grid-cols-2">
-    {#each features as feature (feature.href)}
-        <a
-            href={feature.href}
-            /* 1. ลบ ml-2 ออก เพื่อให้ Grid alignment เป๊ะ */
-            /* 2. เปลี่ยน gap- เป็น gap-3 เพิ่มระยะห่างระหว่างหัวข้อและคำอธิบาย */
-            class="group flex flex-col gap-3 bg-surface p-6 transition-colors duration-300 hover:bg-elevated"
-        >
-            <div class="flex items-center gap-2">
-                <feature.icon class="h-5 w-5 text-accent transition-transform duration-300 group-hover:scale-110" />
-                
-                <span class="font-mono text-xs font-semibold uppercase tracking-widest text-primary">{feature.title}</span>
-            </div>
-            
-            <p class="text-sm leading-relaxed text-secondary-app group-hover:text-primary transition-colors duration-300">
-                {feature.body}
-            </p>
-        </a>
-    {/each}
+	{#each features as feature (feature.href)}
+		<a
+			href={feature.href}
+			class="group relative flex flex-col gap-3 bg-surface p-6 transition-all duration-300 hover:bg-elevated"
+		>
+			<!-- Left border accent — invisible at rest, slides in on hover -->
+			<span
+				class="absolute inset-y-0 left-0 w-0 bg-accent transition-all duration-300 group-hover:w-0.5"
+				aria-hidden="true"
+			></span>
+
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-2">
+					<feature.icon
+						class="h-5 w-5 text-accent transition-transform duration-300 group-hover:scale-110"
+					/>
+					<span
+						class="font-mono text-xs font-semibold uppercase tracking-widest text-app transition-colors duration-300 group-hover:text-accent"
+					>
+						{feature.title}
+					</span>
+				</div>
+				<!-- Arrow that slides in from the left on hover -->
+				<ArrowRight
+					class="h-4 w-4 -translate-x-2 text-accent opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
+				/>
+			</div>
+
+			<p
+				class="text-sm leading-relaxed text-secondary-app transition-colors duration-300 group-hover:text-app"
+			>
+				{feature.body}
+			</p>
+		</a>
+	{/each}
 </section>

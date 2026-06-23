@@ -251,7 +251,7 @@
 						type="range"
 						name="cpu"
 						min="1"
-						max="16"
+						max="100"
 						bind:value={cpu}
 						style="accent-color: var(--accent)"
 						class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-elevated"
@@ -267,7 +267,7 @@
 						type="range"
 						name="ram"
 						min="1"
-						max="64"
+						max="128"
 						bind:value={ram}
 						style="accent-color: var(--accent)"
 						class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-elevated"
@@ -282,8 +282,8 @@
 					<input
 						type="range"
 						name="disk"
-						min="10"
-						max="500"
+						min="1"
+						max="1000"
 						bind:value={disk}
 						style="accent-color: var(--accent)"
 						class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-elevated"
@@ -460,7 +460,7 @@
 				type="submit"
 				class="w-full rounded-lg bg-accent px-6 py-3 font-mono-app text-xs font-bold uppercase tracking-wider text-zinc-950 shadow-md transition hover:opacity-90 sm:w-auto"
 			>
-				Execute_Deploy ({pad3(quantity)})
+				send  <!-- This is the key line -->
 			</button>
 		</div>
 	</div>
