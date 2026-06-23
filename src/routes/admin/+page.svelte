@@ -1,20 +1,9 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { pbBrowser } from '$lib/pb.client';
-	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import type { LeaseInstance } from '$lib/types';
 	import { passionGroupName } from '$lib/types';
 	import { untrack } from 'svelte';
-	import {
-		Cpu,
-		MemoryStick,
-		HardDrive,
-		Radio,
-		CheckCircle2,
-		Terminal,
-		Copy,
-		ShieldCheck
-	} from '@lucide/svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -23,10 +12,7 @@
 	// mutations flow in via the subscription handler.
 	let items = $state<LeaseInstance[]>(untrack(() => [...data.items]));
 	let connectionState = $state<'connecting' | 'live' | 'offline'>('connecting');
-	let expanded = $state<string | null>(null);
-	let copied = $state<string | null>(null);
 
-	// Stats derived from the live list.
 	const stats = $derived({
 		total: items.length,
 		pending: items.filter((i) => i.status === 'pending').length,
@@ -89,218 +75,242 @@
 			.map((p) => p.trim())
 			.filter(Boolean);
 
-	const fmt = (iso: string) =>
-		new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
+	// Thai short month names with the Christian year (e.g. "23 มิ.ย. 2026")
+	// — toLocaleDateString('th-TH') would render the Buddhist year.
+	const TH_MONTHS = [
+		'ม.ค.',
+		'ก.พ.',
+		'มี.ค.',
+		'เม.ย.',
+		'พ.ค.',
+		'มิ.ย.',
+		'ก.ค.',
+		'ส.ค.',
+		'ก.ย.',
+		'ต.ค.',
+		'พ.ย.',
+		'ธ.ค.'
+	];
+	const fmt = (iso: string) => {
+		const d = new Date(iso);
+		return `${d.getDate()} ${TH_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+	};
 
-	async function copyToClipboard(value: string, key: string) {
-		try {
-			await navigator.clipboard.writeText(value);
-			copied = key;
-			setTimeout(() => (copied = copied === key ? null : copied), 1500);
-		} catch {
-			/* clipboard blocked */
-		}
-	}
+	const pad3 = (n: number) => String(n).padStart(3, '0');
 </script>
 
-<header class="mb-8 flex flex-wrap items-end justify-between gap-4">
-	<div>
-		<p class="font-mono text-xs uppercase tracking-[0.2em] text-accent">// admin</p>
-		<h1 class="mt-2 text-2xl font-semibold tracking-tight">Lease queue</h1>
-		<p class="mt-1 text-sm text-secondary-app">
-			Realtime stream of every lease request. Provision it in Proxmox / OPNsense, then mark it
-			resolved.
-		</p>
-	</div>
-
+<div class="space-y-12">
+	<!-- Header — INFRASTRUCTURE_QUEUE -->
 	<div
-		class="inline-flex items-center gap-2 rounded-md border border-app bg-surface px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-secondary-app"
+		class="flex flex-col items-start justify-between gap-4 border-b border-app pb-6 sm:flex-row sm:items-center"
 	>
-		<Radio
-			class="h-3.5 w-3.5 {connectionState === 'live'
-				? 'text-accent'
-				: connectionState === 'connecting'
-					? 'text-muted-app'
-					: 'text-(--danger)'}"
-		/>
-		<span>{connectionState}</span>
-	</div>
-</header>
-
-<div class="mb-6 grid gap-px overflow-hidden rounded-lg border border-app bg-app sm:grid-cols-3">
-	{#each [{ label: 'total', value: stats.total }, { label: 'pending', value: stats.pending, accent: true }, { label: 'completed', value: stats.completed }] as stat (stat.label)}
-		<div class="bg-surface p-5 transition-colors duration-300">
-			<p class="font-mono text-[11px] uppercase tracking-widest text-muted-app">{stat.label}</p>
-			<p class="mt-1 font-mono-app text-3xl {stat.accent ? 'text-accent' : 'text-app'}">
-				{stat.value}
+		<div class="space-y-1">
+			<h1 class="font-mono-app text-xl font-medium tracking-tight text-app">
+				// INFRASTRUCTURE_QUEUE
+			</h1>
+			<p class="text-sm text-secondary-app">
+				รายการคิวสเปค ระยะเวลา และพอร์ตที่ขอใช้งานเซิร์ฟเวอร์จาก PocketBase
 			</p>
 		</div>
-	{/each}
-</div>
 
-{#if items.length === 0}
-	<div
-		class="rounded-lg border border-dashed border-app bg-surface p-12 text-center transition-colors duration-300"
-	>
-		<ShieldCheck class="mx-auto h-8 w-8 text-muted-app" />
-		<p class="mt-3 font-mono text-xs uppercase tracking-widest text-muted-app">Queue is empty</p>
-		<p class="mt-1 text-sm text-secondary-app">New requests will slide in here the moment they are filed.</p>
-	</div>
-{:else}
-	<div class="space-y-3">
-		{#each items as item (item.id)}
-			{@const isOpen = expanded === item.id}
-			<article
-				class="rounded-lg border border-app bg-surface transition-colors duration-300"
+		<div
+			class="flex items-center gap-2 rounded-full border border-app bg-elevated px-3 py-1 font-mono-app text-xs text-secondary-app"
+		>
+			<span
+				class="h-1.5 w-1.5 animate-pulse rounded-full {connectionState === 'live'
+					? 'bg-accent'
+					: connectionState === 'connecting'
+						? 'bg-muted-app'
+						: ''}"
+				style={connectionState === 'offline' ? 'background-color: var(--danger)' : ''}
+			></span>
+			<span
+				>PB_STREAM: {connectionState === 'live'
+					? 'ACTIVE'
+					: connectionState === 'connecting'
+						? 'SYNCING'
+						: 'OFFLINE'}</span
 			>
-				<header class="flex flex-wrap items-center gap-4 px-5 py-4">
-					<button
-						type="button"
-						onclick={() => (expanded = isOpen ? null : item.id)}
-						class="flex flex-1 items-center gap-4 text-left"
+		</div>
+	</div>
+
+	<!-- Mini Dashboard Analytics -->
+	<div class="grid grid-cols-2 gap-6 font-mono-app md:grid-cols-4">
+		<div class="space-y-1">
+			<div class="text-[10px] font-bold uppercase tracking-wider text-muted-app">
+				Total Nodes Req
+			</div>
+			<div class="text-xl font-bold text-app">{pad3(stats.total)} Nodes</div>
+		</div>
+		<div class="space-y-1">
+			<div class="text-[10px] font-bold uppercase tracking-wider text-muted-app">
+				Pending Sync
+			</div>
+			<div class="text-xl font-bold text-accent">
+				{pad3(stats.pending)} Ticket{stats.pending === 1 ? '' : 's'}
+			</div>
+		</div>
+	</div>
+
+	<!-- Data Table -->
+	{#if items.length === 0}
+		<div
+			class="rounded-xl border border-dashed border-app bg-surface p-12 text-center"
+		>
+			<p class="font-mono-app text-xs uppercase tracking-widest text-muted-app">
+				Queue is empty
+			</p>
+		</div>
+	{:else}
+		<div class="overflow-x-auto rounded-xl border border-app bg-surface shadow-2xl">
+			<table class="w-full border-collapse text-left text-sm">
+				<thead>
+					<tr
+						class="border-b border-app bg-elevated font-mono-app text-xs uppercase tracking-wider text-muted-app"
 					>
-						<div class="min-w-0 flex-1">
-							<div class="flex items-baseline gap-2">
-								<h2 class="truncate font-mono-app text-sm text-app">{item.hostname}</h2>
-								<span class="font-mono text-[10px] uppercase tracking-widest text-muted-app">
-									{item.type}
-								</span>
-							</div>
-							<p class="mt-0.5 truncate font-mono text-xs text-muted-app">
-								{item.creator_email} · {passionGroupName(item)} · {item.os_template}
-							</p>
-						</div>
-
-						<dl
-							class="hidden items-center gap-4 font-mono-app text-xs text-secondary-app md:flex"
+						<th class="p-4 font-medium">Instance Specs & Details</th>
+						<th class="p-4 font-medium">Group / Requester</th>
+						<th class="p-4 font-medium">Network & Firewall (Ports)</th>
+						<th class="p-4 text-right font-medium">Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#each items as item (item.id)}
+						{@const isPending = item.status === 'pending'}
+						<tr
+							class="border-b border-app transition-colors last:border-0 {isPending
+								? 'bg-accent-soft hover:bg-elevated'
+								: 'text-muted-app hover:bg-elevated'}"
 						>
-							<div class="flex items-center gap-1">
-								<Cpu class="h-3 w-3 text-muted-app" />
-								<span class="text-accent">{item.specs.cpu}</span>
-							</div>
-							<div class="flex items-center gap-1">
-								<MemoryStick class="h-3 w-3 text-muted-app" />
-								<span class="text-accent">{item.specs.ram}G</span>
-							</div>
-							<div class="flex items-center gap-1">
-								<HardDrive class="h-3 w-3 text-muted-app" />
-								<span class="text-accent">{item.specs.disk}G</span>
-							</div>
-							<div>
-								{fmt(item.start_date)} → {fmt(item.end_date)}
-							</div>
-						</dl>
-
-						<StatusBadge status={item.status} />
-					</button>
-
-					<form method="POST" action="?/resolve" class="shrink-0">
-						<input type="hidden" name="id" value={item.id} />
-						<button
-							type="submit"
-							disabled={item.status === 'completed'}
-							class="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 font-mono text-[11px] uppercase tracking-widest transition-colors duration-300 {item.status ===
-							'completed'
-								? 'border-app bg-elevated text-muted-app'
-								: 'border-app bg-accent text-app hover:bg-accent-soft hover:text-accent'}"
-						>
-							<CheckCircle2 class="h-3.5 w-3.5" />
-							{item.status === 'completed' ? 'Resolved' : 'Resolve'}
-						</button>
-					</form>
-				</header>
-
-				{#if isOpen}
-					<div
-						class="space-y-6 border-t border-app bg-elevated px-5 py-5 transition-colors duration-300"
-					>
-						<!-- Copy-able spec block — operators paste this into Proxmox -->
-						<div>
-							<div class="mb-2 flex items-center gap-2">
-								<Terminal class="h-3.5 w-3.5 text-accent" />
-								<p
-									class="font-mono text-[11px] uppercase tracking-widest text-muted-app"
-								>
-									Proxmox spec
-								</p>
-								<button
-									type="button"
-									onclick={() =>
-										copyToClipboard(
-											`hostname=${item.hostname}\nos=${item.os_template}\ncpu=${item.specs.cpu}\nram=${item.specs.ram}G\ndisk=${item.specs.disk}G\nnetwork=${item.network_type}\nquantity=${item.quantity}`,
-											item.id
-										)}
-									class="ml-auto inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-muted-app hover:text-app"
-								>
-									<Copy class="h-3 w-3" />
-									{copied === item.id ? 'copied' : 'copy'}
-								</button>
-							</div>
-							<pre
-								class="overflow-x-auto rounded border border-app bg-surface p-3 font-mono-app text-xs text-app">hostname={item.hostname}
-os={item.os_template}
-cpu={item.specs.cpu}
-ram={item.specs.ram}G
-disk={item.specs.disk}G
-network={item.network_type}
-quantity={item.quantity}</pre>
-						</div>
-
-						<div class="grid gap-6 sm:grid-cols-3">
-							<div>
-								<p
-									class="font-mono text-[11px] uppercase tracking-widest text-muted-app"
-								>
-									DNS
-								</p>
-								<p class="mt-1 font-mono-app text-sm text-app">
-									{item.dns_name || '—'}
-								</p>
-							</div>
-							<div>
-								<p
-									class="font-mono text-[11px] uppercase tracking-widest text-muted-app"
-								>
-									Open ports
-								</p>
-								<p class="mt-1 flex flex-wrap gap-1.5 font-mono-app text-sm">
-									{#each portsFor(item.ports) as port (port)}
-										<span
-											class="rounded border border-app bg-surface px-2 py-0.5 text-accent"
+							<!-- Specs column -->
+							<td class="space-y-2 p-4">
+								<div class="flex flex-wrap items-center gap-2">
+									<span
+										class="font-mono-app text-sm font-semibold {isPending
+											? 'text-app'
+											: 'text-muted-app line-through'}"
+									>
+										{item.hostname}
+									</span>
+									<span
+										class="rounded border border-app bg-elevated px-1.5 py-0.5 font-mono-app text-[10px] uppercase {isPending
+											? 'text-secondary-app'
+											: 'text-muted-app'}"
+									>
+										{item.type === 'vm' ? 'VM' : 'CT'}
+									</span>
+									<span
+										class="rounded border border-app bg-elevated px-1.5 py-0.5 font-mono-app text-[10px] font-bold {isPending
+											? 'text-accent'
+											: 'text-muted-app'}"
+									>
+										x{item.quantity}
+									</span>
+								</div>
+								<div class="font-mono-app text-xs text-muted-app">
+									{item.os_template} | {item.specs.cpu} Cores | {item.specs.ram} GB RAM
+									| {item.specs.disk} GB Disk
+								</div>
+								{#if isPending}
+									<div
+										class="max-w-md rounded border border-app bg-elevated p-2"
+									>
+										<div
+											class="font-mono-app text-[10px] font-bold uppercase text-muted-app"
 										>
-											{port}
+											Purpose / Notes:
+										</div>
+										<div
+											class="mt-0.5 font-mono-app text-xs leading-relaxed text-secondary-app"
+										>
+											{item.purpose_notes}
+										</div>
+									</div>
+								{:else}
+									<div class="font-mono-app text-[11px] text-muted-app">
+										Purpose: {item.purpose_notes}
+									</div>
+								{/if}
+							</td>
+
+							<!-- Group / Requester column -->
+							<td class="space-y-3 p-4">
+								<div>
+									<div class="text-sm {isPending ? 'text-app' : 'text-muted-app'}">
+										{passionGroupName(item)}
+									</div>
+									<div class="font-mono-app text-xs text-muted-app">
+										{item.creator_email}
+									</div>
+								</div>
+								<div class="space-y-0.5 font-mono-app text-[11px] text-muted-app">
+									<div>
+										Start: <span class="text-secondary-app">{fmt(item.start_date)}</span>
+									</div>
+									<div>
+										{isPending ? 'Expire' : 'Expired'}: <span
+											class={isPending ? 'text-accent' : 'text-muted-app'}
+											>{fmt(item.end_date)}</span
+										>
+									</div>
+								</div>
+							</td>
+
+							<!-- Network & Firewall column -->
+							<td class="space-y-1.5 p-4 font-mono-app text-xs">
+								<div>
+									Zone: <span
+										class="font-bold {isPending ? 'text-app' : 'text-muted-app'}"
+										>{item.network_type === 'local' ? 'LOCAL IP' : 'PUBLIC'}</span
+									>
+								</div>
+								{#if item.dns_name}
+									<div class="max-w-[180px] truncate text-muted-app">
+										DNS: <span
+											class="{isPending
+												? 'text-secondary-app underline'
+												: 'text-muted-app'}">{item.dns_name}</span
+										>
+									</div>
+								{/if}
+								<div class={isPending ? 'text-secondary-app' : 'text-muted-app'}>
+									Custom Ports:
+									{#if portsFor(item.ports).length > 0}
+										<span
+											class="ml-1 rounded border border-app bg-accent-soft px-1.5 py-0.5 font-bold text-accent"
+										>
+											{portsFor(item.ports).join(', ')}
 										</span>
 									{:else}
-										<span class="text-secondary-app">—</span>
-									{/each}
-								</p>
-							</div>
-							<div>
-								<p
-									class="font-mono text-[11px] uppercase tracking-widest text-muted-app"
-								>
-									Lease window
-								</p>
-								<p class="mt-1 font-mono-app text-sm text-app">
-									{fmt(item.start_date)} → {fmt(item.end_date)}
-								</p>
-								<p class="mt-0.5 text-xs text-muted-app">×{item.quantity}</p>
-							</div>
-						</div>
+										<span class="text-muted-app">Default Only</span>
+									{/if}
+								</div>
+							</td>
 
-						<div>
-							<p class="font-mono text-[11px] uppercase tracking-widest text-muted-app">
-								Purpose notes
-							</p>
-							<p
-								class="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-secondary-app"
-							>
-								{item.purpose_notes}
-							</p>
-						</div>
-					</div>
-				{/if}
-			</article>
-		{/each}
-	</div>
-{/if}
+							<!-- Action column -->
+							<td class="p-4 text-right">
+								{#if isPending}
+									<form method="POST" action="?/resolve" class="inline">
+										<input type="hidden" name="id" value={item.id} />
+										<button
+											type="submit"
+											class="rounded-lg bg-accent px-3 py-1.5 font-mono-app text-xs font-bold uppercase tracking-wider text-zinc-950 shadow-md transition hover:opacity-90"
+										>
+											Resolve
+										</button>
+									</form>
+								{:else}
+									<span
+										class="inline-flex items-center rounded-md border border-app bg-elevated px-2.5 py-1 font-mono-app text-xs text-muted-app"
+									>
+										Synced_Ok
+									</span>
+								{/if}
+							</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
+	{/if}
+</div>
