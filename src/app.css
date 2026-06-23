@@ -1,0 +1,160 @@
+@import 'tailwindcss';
+
+/* -------------------------------------------------------------------------- */
+/*  LEASE theme tokens — two named palettes toggled via classes on <html>:    */
+/*    .theme-midnight  — Zinc-950 base, amber raw hardware accent (#f59e0b)  */
+/*    .theme-light     — Zinc-50  base, deeper amber accent for contrast      */
+/* -------------------------------------------------------------------------- */
+
+@theme {
+	--font-sans:
+		'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+		Arial, sans-serif;
+	--font-mono:
+		'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono',
+		monospace;
+}
+
+/* Midnight Mode (default) ------------------------------------------------- */
+.theme-midnight {
+	--bg-app: #09090b; /* zinc-950 */
+	--bg-surface: #0c0c10;
+	--bg-elevated: #111114;
+	--bg-input: #0a0a0c;
+	--text-primary: #f4f4f5; /* zinc-100 */
+	--text-secondary: #a1a1aa; /* zinc-400 */
+	--text-muted: #71717a; /* zinc-500 */
+	--border: #1f1f23;
+	--border-strong: #27272a;
+	--accent: #f59e0b; /* amber-500 */
+	--accent-strong: #fbbf24; /* amber-400 */
+	--accent-soft: rgba(245, 158, 11, 0.12);
+	--danger: #ef4444;
+	--success: #22c55e;
+	color-scheme: dark;
+}
+
+/* Pure Light Mode --------------------------------------------------------- */
+.theme-light {
+	--bg-app: #fafafa; /* zinc-50 */
+	--bg-surface: #ffffff;
+	--bg-elevated: #f4f4f5;
+	--bg-input: #ffffff;
+	--text-primary: #09090b; /* zinc-950 */
+	--text-secondary: #3f3f46; /* zinc-700 */
+	--text-muted: #71717a; /* zinc-500 */
+	--border: #e4e4e7; /* zinc-200 */
+	--border-strong: #d4d4d8; /* zinc-300 */
+	--accent: #b45309; /* amber-700 — deeper for AA contrast on light */
+	--accent-strong: #92400e; /* amber-800 */
+	--accent-soft: rgba(180, 83, 9, 0.1);
+	--danger: #b91c1c;
+	--success: #15803d;
+	color-scheme: light;
+}
+
+/* Base reset --------------------------------------------------------------- */
+html,
+body {
+	background-color: var(--bg-app);
+	color: var(--text-primary);
+	font-family: var(--font-sans);
+	-webkit-font-smoothing: antialiased;
+}
+
+* {
+	border-color: var(--border);
+}
+
+::selection {
+	background: var(--accent-soft);
+	color: var(--accent-strong);
+}
+
+/* Native input theming ----------------------------------------------------- */
+input,
+select,
+textarea {
+	background-color: var(--bg-input);
+	color: var(--text-primary);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	padding: 0.5rem 0.75rem;
+	font-size: 0.875rem;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+input:focus,
+select:focus,
+textarea:focus {
+	outline: none;
+	border-color: var(--accent);
+	box-shadow: 0 0 0 1px var(--accent);
+}
+input:disabled,
+input[readonly] {
+	background-color: var(--bg-elevated);
+	color: var(--text-secondary);
+	cursor: not-allowed;
+}
+
+/* Custom scrollbar — industrial ------------------------------------------- */
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+::-webkit-scrollbar-thumb {
+	background: var(--border-strong);
+	border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+	background: var(--text-muted);
+}
+
+/* Tailwind utilities bound to our CSS variables ---------------------------- */
+@layer utilities {
+	.bg-app {
+		background-color: var(--bg-app);
+	}
+	.bg-surface {
+		background-color: var(--bg-surface);
+	}
+	.bg-elevated {
+		background-color: var(--bg-elevated);
+	}
+	.bg-input {
+		background-color: var(--bg-input);
+	}
+	.text-app {
+		color: var(--text-primary);
+	}
+	.text-secondary-app {
+		color: var(--text-secondary);
+	}
+	.text-muted-app {
+		color: var(--text-muted);
+	}
+	.text-accent {
+		color: var(--accent);
+	}
+	.bg-accent {
+		background-color: var(--accent);
+	}
+	.bg-accent-soft {
+		background-color: var(--accent-soft);
+	}
+	.border-app {
+		border-color: var(--border);
+	}
+	.border-strong-app {
+		border-color: var(--border-strong);
+	}
+	.ring-accent {
+		--tw-ring-color: var(--accent);
+	}
+	.font-mono-app {
+		font-family: var(--font-mono);
+	}
+}
