@@ -1,20 +1,22 @@
 <script lang="ts">
-	import type { ActionData, PageData } from './$types';
-	import { untrack } from 'svelte';
-	import { TriangleAlert, Search, X } from '@lucide/svelte';
+	import type { ActionData, PageData } from "./$types";
+	import { untrack } from "svelte";
+	import { TriangleAlert, Search, X } from "@lucide/svelte";
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	// Suffix shown next to the DNS prefix input. The full DNS is built
 	// client-side and sent via a hidden input so the form payload still
 	// matches the server's `dns_name` schema field.
-	const DNS_SUFFIX = '.cskmitl.com';
+	const DNS_SUFFIX = ".cskmitl.com";
 
 	// Today / +30 days, in YYYY-MM-DD (the wire format <input type="date">
 	// expects). Computed once so the form has sensible defaults instead
 	// of starting empty.
 	const today = new Date().toISOString().slice(0, 10);
-	const inThirtyDays = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
+	const inThirtyDays = new Date(Date.now() + 30 * 86_400_000)
+		.toISOString()
+		.slice(0, 10);
 
 	// Live form state. Mirrors the rendered inputs so the preview pane
 	// can re-derive on every keystroke. Initial values are seeded from the
@@ -22,17 +24,19 @@
 	// validation re-renders (see $effect below). We use `untrack` because
 	// the form fields are intentionally a one-time copy of `data.defaults`;
 	// the user's typing should not be invalidated by reactive prop churn.
-	let passion_group = $state('');
-	let type = $state<'vm' | 'container'>(untrack(() => data.defaults.type));
-	let hostname = $state('');
-	let os_template = $state(untrack(() => 'ubuntu-24.04'));
+	let passion_group = $state("");
+	let type = $state<"vm" | "container">(untrack(() => data.defaults.type));
+	let hostname = $state("");
+	let os_template = $state(untrack(() => "ubuntu-24.04"));
 	let cpu = $state(untrack(() => data.defaults.cpu));
 	let ram = $state(untrack(() => data.defaults.ram));
 	let disk = $state(untrack(() => data.defaults.disk));
-	let network_type = $state<'local' | 'public'>(untrack(() => data.defaults.network_type));
-	let dnsPrefix = $state('');
-	let ports = $state('');
-	let purpose_notes = $state('');
+	let network_type = $state<"local" | "public">(
+		untrack(() => data.defaults.network_type),
+	);
+	let dnsPrefix = $state("");
+	let ports = $state("");
+	let purpose_notes = $state("");
 	let start_date = $state(untrack(() => today));
 	let end_date = $state(untrack(() => inThirtyDays));
 	let quantity = $state(untrack(() => data.defaults.quantity));
@@ -40,20 +44,20 @@
 	// Preset selection is tracked separately from the form fields so the
 	// description/source-link can re-render below the dropdown. The form
 	// fields mirror whatever values the preset pushed in.
-	let selectedPreset = $state('');
+	let selectedPreset = $state("");
 
 	// Combobox UI state. `presetQuery` is the text in the visible input —
 	// it filters the dropdown as the user types. `presetDropdownOpen` is
 	// a separate flag (rather than just "input is focused") because we
 	// keep the dropdown open during a click on an option and close it
 	// only on outside clicks / selection.
-	let presetQuery = $state('');
+	let presetQuery = $state("");
 	let presetDropdownOpen = $state(false);
 
 	// The "I understand" button on the Develop-preset warning sets this
 	// to the slug of the current selection so the banner collapses for
 	// that one preset. Picking a different Develop preset re-shows it.
-	let acknowledgedDevelopSlug = $state('');
+	let acknowledgedDevelopSlug = $state("");
 
 	// Case-insensitive substring match against name + slug — slug lets
 	// power users jump straight to e.g. "nginx" without scrolling.
@@ -61,7 +65,9 @@
 		const q = presetQuery.trim().toLowerCase();
 		if (!q) return data.presets;
 		return data.presets.filter(
-			(p) => p.name.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q)
+			(p) =>
+				p.name.toLowerCase().includes(q) ||
+				p.slug.toLowerCase().includes(q),
 		);
 	});
 
@@ -70,15 +76,20 @@
 	// we lock the display to the canonical name from the catalog.
 	const presetDisplayValue = $derived.by(() => {
 		if (selectedPreset) {
-			return data.presets.find((p) => p.slug === selectedPreset)?.name ?? presetQuery;
+			return (
+				data.presets.find((p) => p.slug === selectedPreset)?.name ??
+				presetQuery
+			);
 		}
 		return presetQuery;
 	});
 
 	function selectPreset(slug: string) {
 		selectedPreset = slug;
-		const match = slug ? data.presets.find((p) => p.slug === slug) : undefined;
-		presetQuery = match?.name ?? '';
+		const match = slug
+			? data.presets.find((p) => p.slug === slug)
+			: undefined;
+		presetQuery = match?.name ?? "";
 		presetDropdownOpen = false;
 		// applyPreset already handles slug === '' (leaves form alone),
 		// so we don't need a separate branch here.
@@ -86,8 +97,8 @@
 	}
 
 	function clearPreset() {
-		selectedPreset = '';
-		presetQuery = '';
+		selectedPreset = "";
+		presetQuery = "";
 		presetDropdownOpen = false;
 	}
 
@@ -113,13 +124,16 @@
 		network_type = preset.default_network;
 		if (preset.default_ports) ports = preset.default_ports;
 		// Only pre-fill notes if the user hasn't already typed something.
-		if (preset.description && !purpose_notes) purpose_notes = preset.description;
+		if (preset.description && !purpose_notes)
+			purpose_notes = preset.description;
 	}
 
 	// Compose the full DNS for the hidden form field. If the user clears
 	// the prefix, we send an empty string — the server treats empty DNS
 	// as "no DNS requested".
-	const dns_name = $derived(dnsPrefix.trim() ? `${dnsPrefix.trim()}${DNS_SUFFIX}` : '');
+	const dns_name = $derived(
+		dnsPrefix.trim() ? `${dnsPrefix.trim()}${DNS_SUFFIX}` : "",
+	);
 
 	// If the server returned previous values (validation error), restore them.
 	$effect(() => {
@@ -151,39 +165,40 @@
 	// Derived values for the right-hand preview pane.
 	const portsList = $derived(
 		ports
-			.split(',')
+			.split(",")
 			.map((p) => p.trim())
-			.filter(Boolean)
+			.filter(Boolean),
 	);
 	const errors = $derived<Record<string, string>>(form?.errors ?? {});
 
 	const TH_MONTHS = [
-		'ม.ค.',
-		'ก.พ.',
-		'มี.ค.',
-		'เม.ย.',
-		'พ.ค.',
-		'มิ.ย.',
-		'ก.ค.',
-		'ส.ค.',
-		'ก.ย.',
-		'ต.ค.',
-		'พ.ย.',
-		'ธ.ค.'
+		"ม.ค.",
+		"ก.พ.",
+		"มี.ค.",
+		"เม.ย.",
+		"พ.ค.",
+		"มิ.ย.",
+		"ก.ค.",
+		"ส.ค.",
+		"ก.ย.",
+		"ต.ค.",
+		"พ.ย.",
+		"ธ.ค.",
 	];
 	const fmtDate = (d: string) => {
-		if (!d) return '—';
+		if (!d) return "—";
 		const dt = new Date(d);
 		return `${dt.getDate()} ${TH_MONTHS[dt.getMonth()]} ${dt.getFullYear()}`;
 	};
 	const leaseDays = $derived.by(() => {
 		if (!start_date || !end_date) return null;
-		const ms = new Date(end_date).getTime() - new Date(start_date).getTime();
+		const ms =
+			new Date(end_date).getTime() - new Date(start_date).getTime();
 		return Math.max(0, Math.ceil(ms / 86_400_000));
 	});
-	const pad3 = (n: number) => String(n).padStart(3, '0');
+	const pad3 = (n: number) => String(n).padStart(3, "0");
 	const passionGroupName = $derived(
-		data.passionGroups.find((g) => g.id === passion_group)?.name ?? '—'
+		data.passionGroups.find((g) => g.id === passion_group)?.name ?? "—",
 	);
 
 	// Close the preset dropdown on any pointerdown outside the combobox
@@ -194,7 +209,7 @@
 	function handleWindowPointerDown(e: PointerEvent) {
 		if (!presetDropdownOpen) return;
 		const target = e.target as HTMLElement | null;
-		if (target?.closest('.preset-combobox')) return;
+		if (target?.closest(".preset-combobox")) return;
 		presetDropdownOpen = false;
 	}
 </script>
@@ -203,17 +218,20 @@
 
 <form
 	method="POST"
-	class="mx-auto grid max-w-6xl grid-cols-1 gap-12 lg:grid-cols-3 lg:gap-16"
+	class="mx-auto grid max-w-6xl grid-cols-1 gap-12 lg:grid-cols-3 lg:gap-16 xl:max-w-7xl 2xl:max-w-[1600px] 2xl:gap-20"
 >
 	<!-- LEFT: form fields (~70%) -------------------------------------------- -->
 	<div class="space-y-10 lg:col-span-2">
 		<!-- Header -->
 		<div class="space-y-2">
-			<h1 class="font-mono-app text-xl font-medium tracking-tight text-app">
+			<h1
+				class="font-mono-app text-xl font-medium tracking-tight text-app"
+			>
 				// PROVISION_NEW_INSTANCE
 			</h1>
 			<p class="text-sm text-secondary-app">
-				ระบุข้อมูลสเปคระบบ ช่วงเวลา และวัตถุประสงค์เพื่อบันทึกคำขอลง PocketBase
+				ระบุข้อมูลสเปคระบบ ช่วงเวลา และวัตถุประสงค์เพื่อบันทึกคำขอลง
+				PocketBase
 			</p>
 		</div>
 
@@ -226,18 +244,24 @@
 		     scrolling through a <select> would be painful). When a Develop
 		     preset is selected, a warning banner is shown beneath it. -->
 		{#if data.presets.length > 0}
-			{@const selectedPresetRecord = data.presets.find((p) => p.slug === selectedPreset)}
+			{@const selectedPresetRecord = data.presets.find(
+				(p) => p.slug === selectedPreset,
+			)}
 			{@const showDevelopWarning =
-				selectedPresetRecord?.status === 'Develop' &&
+				selectedPresetRecord?.status === "Develop" &&
 				acknowledgedDevelopSlug !== selectedPreset}
-			<div class="space-y-4 rounded-lg border border-dashed border-app bg-surface/40 p-5">
+			<div
+				class="space-y-4 rounded-lg border border-dashed border-app bg-surface/40 p-5"
+			>
 				<div class="space-y-2">
 					<label
+						for="preset-combobox"
 						class="block text-xs font-medium uppercase tracking-wider text-secondary-app font-mono-app"
 					>
 						Quick Preset
 						<span class="text-muted-app">
-							· optional · auto-fills from catalog ({data.presets.length}) · type to search
+							· optional · auto-fills from catalog ({data.presets
+								.length}) · type to search
 						</span>
 					</label>
 
@@ -249,6 +273,7 @@
 					     dance — mousedown fires before blur on every browser. -->
 					<div class="relative preset-combobox">
 						<input
+							id="preset-combobox"
 							type="text"
 							role="combobox"
 							aria-expanded={presetDropdownOpen}
@@ -261,17 +286,21 @@
 								// Editing the text clears the previous selection —
 								// the form still holds the old values until the user
 								// picks a new one (or clears via the X button).
-								if (selectedPreset && presetQuery !== presetDisplayValue) {
-									selectedPreset = '';
+								if (
+									selectedPreset &&
+									presetQuery !== presetDisplayValue
+								) {
+									selectedPreset = "";
 								}
 								presetDropdownOpen = true;
 							}}
 							onfocus={() => (presetDropdownOpen = true)}
-							class="w-full rounded-lg border border-app bg-elevated py-2 pl-9 pr-9 font-mono-app text-sm text-app focus:border-strong-app focus:outline-none"
+							class="w-full rounded-lg border border-app bg-elevated py-2 pl-9 pr-9 font-mono-app text-sm text-app focus:border-strong-app focus:outline-none ml-5"
 						/>
-						<Search
-							class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-app"
+							<Search
+							class="pointer-events-none absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-app"
 						/>
+						
 						{#if selectedPreset}
 							<button
 								type="button"
@@ -291,27 +320,34 @@
 							>
 								<li
 									role="option"
-									aria-selected={selectedPreset === ''}
-									onmousedown={() => selectPreset('')}
+									aria-selected={selectedPreset === ""}
+									onmousedown={() => selectPreset("")}
 									class="cursor-pointer px-3 py-2 font-mono-app text-xs text-muted-app transition hover:bg-surface hover:text-app"
 								>
 									— blank / start from scratch —
 								</li>
 								{#if filteredPresets.length === 0}
-									<li class="px-3 py-2 font-mono-app text-xs text-muted-app">
+									<li
+										class="px-3 py-2 font-mono-app text-xs text-muted-app"
+									>
 										No matches for "{presetQuery}".
 									</li>
 								{:else}
 									{#each filteredPresets as preset (preset.slug)}
-										{@const isDevelop = preset.status === 'Develop'}
+										{@const isDevelop =
+											preset.status === "Develop"}
 										<li
 											role="option"
-											aria-selected={selectedPreset === preset.slug}
-											onmousedown={() => selectPreset(preset.slug)}
+											aria-selected={selectedPreset ===
+												preset.slug}
+											onmousedown={() =>
+												selectPreset(preset.slug)}
 											class="flex cursor-pointer items-center justify-between gap-2 border-t border-app px-3 py-2 font-mono-app text-xs transition hover:bg-surface"
 										>
 											<span class="flex flex-col gap-0.5">
-												<span class="flex items-center gap-2 text-app">
+												<span
+													class="flex items-center gap-2 text-app"
+												>
 													{preset.name}
 													{#if isDevelop}
 														<span
@@ -323,11 +359,15 @@
 													{/if}
 												</span>
 												<span class="text-muted-app">
-													{preset.type} · {preset.os_template} · {preset.slug}
+													{preset.type} · {preset.os_template}
+													· {preset.slug}
 												</span>
 											</span>
-											<span class="shrink-0 text-muted-app">
-												{preset.default_cpu}C / {preset.default_ram}G /
+											<span
+												class="shrink-0 text-muted-app"
+											>
+												{preset.default_cpu}C / {preset.default_ram}G
+												/
 												{preset.default_disk}G
 											</span>
 										</li>
@@ -360,14 +400,21 @@
 								>
 									Development script
 								</p>
-								<p class="text-xs leading-relaxed text-secondary-app">
-									This script is in active development and may be unstable, incomplete,
-									or subject to breaking changes. It is
-									<span class="font-semibold text-app">not recommended for production use</span>.
+								<p
+									class="text-xs leading-relaxed text-secondary-app"
+								>
+									This script is in active development and may
+									be unstable, incomplete, or subject to
+									breaking changes. It is
+									<span class="font-semibold text-app"
+										>not recommended for production use</span
+									>.
 								</p>
 								<button
 									type="button"
-									onclick={() => (acknowledgedDevelopSlug = selectedPreset)}
+									onclick={() =>
+										(acknowledgedDevelopSlug =
+											selectedPreset)}
 									class="rounded-md border-2 px-3 py-1.5 font-mono-app text-[10px] font-bold uppercase tracking-wider text-accent transition hover:bg-accent hover:text-zinc-950"
 									style="border-color: var(--accent);"
 								>
@@ -381,8 +428,11 @@
 				{#if selectedPresetRecord}
 					<div class="space-y-2 border-t border-app pt-3 text-xs">
 						<div class="flex items-start justify-between gap-3">
-							<p class="flex-1 leading-relaxed text-secondary-app">
-								{selectedPresetRecord.description || 'No description provided.'}
+							<p
+								class="flex-1 leading-relaxed text-secondary-app"
+							>
+								{selectedPresetRecord.description ||
+									"No description provided."}
 							</p>
 							{#if selectedPresetRecord.source_url}
 								<a
@@ -398,27 +448,49 @@
 						<div
 							class="flex flex-wrap gap-x-2 gap-y-1 font-mono-app text-[10px] uppercase tracking-wider text-muted-app"
 						>
-							<span>type: <span class="text-app">{selectedPresetRecord.type}</span></span>
+							<span
+								>type: <span class="text-app"
+									>{selectedPresetRecord.type}</span
+								></span
+							>
 							<span>·</span>
-							<span>os: <span class="text-app">{selectedPresetRecord.os_template}</span></span>
+							<span
+								>os: <span class="text-app"
+									>{selectedPresetRecord.os_template}</span
+								></span
+							>
 							<span>·</span>
-							<span>net: <span class="text-app">{selectedPresetRecord.default_network}</span></span>
+							<span
+								>net: <span class="text-app"
+									>{selectedPresetRecord.default_network}</span
+								></span
+							>
 							{#if selectedPresetRecord.default_ports}
 								<span>·</span>
-								<span>port: <span class="text-app">{selectedPresetRecord.default_ports}</span></span>
+								<span
+									>port: <span class="text-app"
+										>{selectedPresetRecord.default_ports}</span
+									></span
+								>
 							{/if}
 							{#if selectedPresetRecord.category}
 								<span>·</span>
-								<span>cat: <span class="text-app">{selectedPresetRecord.category}</span></span>
+								<span
+									>cat: <span class="text-app"
+										>{selectedPresetRecord.category}</span
+									></span
+								>
 							{/if}
 							{#if selectedPresetRecord.status}
 								<span>·</span>
 								<span>
 									status:
 									<span
-										class={selectedPresetRecord.status === 'Develop'
-											? 'font-bold text-accent'
-											: 'text-app'}>{selectedPresetRecord.status}</span
+										class={selectedPresetRecord.status ===
+										"Develop"
+											? "font-bold text-accent"
+											: "text-app"}
+										>{selectedPresetRecord.status}</span
 									>
 								</span>
 							{/if}
@@ -433,11 +505,13 @@
 			<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 				<div class="space-y-2">
 					<label
+						for="creator-email"
 						class="block text-xs font-medium uppercase tracking-wider text-secondary-app font-mono-app"
 					>
 						Creator
 					</label>
 					<input
+						id="creator-email"
 						type="email"
 						value={data.email}
 						disabled
@@ -446,11 +520,13 @@
 				</div>
 				<div class="space-y-2">
 					<label
+						for="passion_group"
 						class="block text-xs font-medium uppercase tracking-wider text-secondary-app font-mono-app"
 					>
 						Passion Group
 					</label>
 					<select
+						id="passion_group"
 						name="passion_group"
 						bind:value={passion_group}
 						required
@@ -462,22 +538,32 @@
 						{/each}
 					</select>
 					{#if errors.passion_group}
-						<p class="mt-1 text-xs" style="color: var(--danger)">{errors.passion_group}</p>
+						<p class="mt-1 text-xs" style="color: var(--danger)">
+							{errors.passion_group}
+						</p>
 					{/if}
 				</div>
 			</div>
 
-			<!-- Environment Type toggle (VM / Container) -->
-			<div class="space-y-2">
-				<label
+			<!-- Environment Type toggle (VM / Container) — a pair of mutually
+			     exclusive buttons. <fieldset>+<legend> is the proper
+			     semantic for a related control group; the hidden input
+			     below carries the chosen value into the form payload. -->
+			<fieldset class="space-y-2">
+				<legend
 					class="block text-xs font-medium uppercase tracking-wider text-secondary-app font-mono-app"
 				>
 					Environment Type
-				</label>
-				<div class="flex max-w-xs rounded-lg border border-app bg-surface p-1">
+				</legend>
+				<div
+					class="flex max-w-xs rounded-lg border border-app bg-surface p-1"
+					role="radiogroup"
+				>
 					<button
 						type="button"
-						onclick={() => (type = 'vm')}
+						role="radio"
+						aria-checked={type === "vm"}
+						onclick={() => (type = "vm")}
 						class="flex-1 rounded-md py-1.5 font-mono-app text-xs font-medium transition {type ===
 						'vm'
 							? 'border border-strong-app bg-elevated text-accent shadow-sm'
@@ -487,7 +573,9 @@
 					</button>
 					<button
 						type="button"
-						onclick={() => (type = 'container')}
+						role="radio"
+						aria-checked={type === "container"}
+						onclick={() => (type = "container")}
 						class="flex-1 rounded-md py-1.5 font-mono-app text-xs font-medium transition {type ===
 						'container'
 							? 'border border-strong-app bg-elevated text-accent shadow-sm'
@@ -498,7 +586,7 @@
 				</div>
 				<!-- Buttons don't submit values, so the toggle state rides on a hidden input. -->
 				<input type="hidden" name="type" value={type} />
-			</div>
+			</fieldset>
 		</div>
 
 		<!-- Section 2: Hardware Resources -->
@@ -506,11 +594,13 @@
 			<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 				<div class="space-y-2">
 					<label
+						for="hostname"
 						class="block text-xs font-medium uppercase tracking-wider text-secondary-app font-mono-app"
 					>
 						Hostname
 					</label>
 					<input
+						id="hostname"
 						type="text"
 						name="hostname"
 						bind:value={hostname}
@@ -520,16 +610,20 @@
 						required
 					/>
 					{#if errors.hostname}
-						<p class="mt-1 text-xs" style="color: var(--danger)">{errors.hostname}</p>
+						<p class="mt-1 text-xs" style="color: var(--danger)">
+							{errors.hostname}
+						</p>
 					{/if}
 				</div>
 				<div class="space-y-2">
 					<label
+						for="os_template"
 						class="block text-xs font-medium uppercase tracking-wider text-secondary-app font-mono-app"
 					>
 						OS Template
 					</label>
 					<input
+						id="os_template"
 						type="text"
 						name="os_template"
 						bind:value={os_template}
@@ -538,7 +632,9 @@
 						required
 					/>
 					{#if errors.os_template}
-						<p class="mt-1 text-xs" style="color: var(--danger)">{errors.os_template}</p>
+						<p class="mt-1 text-xs" style="color: var(--danger)">
+							{errors.os_template}
+						</p>
 					{/if}
 				</div>
 			</div>
@@ -600,16 +696,24 @@
 
 		<!-- Section 3: Networking & Custom Ports -->
 		<div class="space-y-6 border-t border-app pt-4">
-			<div class="space-y-2">
-				<label
+			<!-- Network Access toggle (Local / Public) — sibling pattern to
+			     the Environment Type toggle. fieldset+legend carries the
+			     semantic group label; the hidden input carries the value. -->
+			<fieldset class="space-y-2">
+				<legend
 					class="block text-xs font-medium uppercase tracking-wider text-secondary-app font-mono-app"
 				>
 					Network Access
-				</label>
-				<div class="flex max-w-xs rounded-lg border border-app bg-surface p-1">
+				</legend>
+				<div
+					class="flex max-w-xs rounded-lg border border-app bg-surface p-1"
+					role="radiogroup"
+				>
 					<button
 						type="button"
-						onclick={() => (network_type = 'local')}
+						role="radio"
+						aria-checked={network_type === "local"}
+						onclick={() => (network_type = "local")}
 						class="flex-1 rounded-md py-1.5 font-mono-app text-xs font-medium transition {network_type ===
 						'local'
 							? 'border border-strong-app bg-elevated text-app shadow-sm'
@@ -619,7 +723,9 @@
 					</button>
 					<button
 						type="button"
-						onclick={() => (network_type = 'public')}
+						role="radio"
+						aria-checked={network_type === "public"}
+						onclick={() => (network_type = "public")}
 						class="flex-1 rounded-md py-1.5 font-mono-app text-xs font-medium transition {network_type ===
 						'public'
 							? 'border border-strong-app bg-elevated text-app shadow-sm'
@@ -629,11 +735,12 @@
 					</button>
 				</div>
 				<input type="hidden" name="network_type" value={network_type} />
-			</div>
+			</fieldset>
 
 			<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 				<div class="space-y-2">
 					<label
+						for="dns_prefix"
 						class="block text-xs font-medium uppercase tracking-wider text-secondary-app font-mono-app"
 					>
 						DNS Request
@@ -642,12 +749,14 @@
 						class="flex items-center rounded-lg border border-app bg-elevated pr-3 transition-colors focus-within:border-strong-app"
 					>
 						<input
+							id="dns_prefix"
 							type="text"
 							bind:value={dnsPrefix}
 							class="w-full border-0 bg-transparent px-3 py-2 font-mono-app text-sm text-app focus:outline-none"
 							placeholder="api-gateway-prod"
 						/>
-						<span class="whitespace-nowrap font-mono-app text-xs text-muted-app"
+						<span
+							class="whitespace-nowrap font-mono-app text-xs text-muted-app"
 							>{DNS_SUFFIX}</span
 						>
 					</div>
@@ -657,11 +766,13 @@
 				</div>
 				<div class="space-y-2">
 					<label
+						for="ports"
 						class="block text-xs font-medium uppercase tracking-wider text-secondary-app font-mono-app"
 					>
 						Custom Open Ports
 					</label>
 					<input
+						id="ports"
 						type="text"
 						name="ports"
 						bind:value={ports}
@@ -669,7 +780,9 @@
 						placeholder="e.g. 8080, 3000"
 					/>
 					{#if errors.ports}
-						<p class="mt-1 text-xs" style="color: var(--danger)">{errors.ports}</p>
+						<p class="mt-1 text-xs" style="color: var(--danger)">
+							{errors.ports}
+						</p>
 					{/if}
 				</div>
 			</div>
@@ -680,11 +793,15 @@
 			<div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
 				<div class="space-y-2">
 					<label
+						for="start_date"
 						class="block text-xs font-medium uppercase tracking-wider text-secondary-app font-mono-app"
 					>
-						Start Date <span class="text-muted-app">(วันเริ่มใช้)</span>
+						Start Date <span class="text-muted-app"
+							>(วันเริ่มใช้)</span
+						>
 					</label>
 					<input
+						id="start_date"
 						type="date"
 						name="start_date"
 						bind:value={start_date}
@@ -693,16 +810,21 @@
 						required
 					/>
 					{#if errors.start_date}
-						<p class="mt-1 text-xs" style="color: var(--danger)">{errors.start_date}</p>
+						<p class="mt-1 text-xs" style="color: var(--danger)">
+							{errors.start_date}
+						</p>
 					{/if}
 				</div>
 				<div class="space-y-2">
 					<label
+						for="end_date"
 						class="block text-xs font-medium uppercase tracking-wider text-secondary-app font-mono-app"
 					>
-						End Date <span class="text-muted-app">(วันสิ้นสุด)</span>
+						End Date <span class="text-muted-app">(วันสิ้นสุด)</span
+						>
 					</label>
 					<input
+						id="end_date"
 						type="date"
 						name="end_date"
 						bind:value={end_date}
@@ -711,7 +833,9 @@
 						required
 					/>
 					{#if errors.end_date}
-						<p class="mt-1 text-xs" style="color: var(--danger)">{errors.end_date}</p>
+						<p class="mt-1 text-xs" style="color: var(--danger)">
+							{errors.end_date}
+						</p>
 					{/if}
 				</div>
 			</div>
@@ -721,6 +845,7 @@
 		<div class="space-y-4 border-t border-app pt-4">
 			<div class="space-y-2">
 				<label
+					for="purpose_notes"
 					class="block text-xs font-medium uppercase tracking-wider text-secondary-app font-mono-app"
 				>
 					Purpose / Notes <span class="text-muted-app"
@@ -728,6 +853,7 @@
 					>
 				</label>
 				<textarea
+					id="purpose_notes"
 					name="purpose_notes"
 					bind:value={purpose_notes}
 					rows="3"
@@ -736,7 +862,9 @@
 					required
 				></textarea>
 				{#if errors.purpose_notes}
-					<p class="mt-1 text-xs" style="color: var(--danger)">{errors.purpose_notes}</p>
+					<p class="mt-1 text-xs" style="color: var(--danger)">
+						{errors.purpose_notes}
+					</p>
 				{/if}
 			</div>
 		</div>
@@ -744,51 +872,37 @@
 		<!-- Section 6: Quantity & Submit -->
 		<div
 			class="flex flex-col items-center justify-between gap-4 border-t border-app pt-6 sm:flex-row"
-		>
-			<div class="flex items-center gap-4">
-				<label
-					class="text-xs font-medium uppercase tracking-wider text-secondary-app font-mono-app"
-				>
-					Quantity
-				</label>
-				<input
-					type="number"
-					name="quantity"
-					bind:value={quantity}
-					min="1"
-					max="10"
-					class="w-16 rounded-lg border border-app bg-elevated p-1.5 text-center font-mono-app text-sm font-bold text-accent focus:border-strong-app focus:outline-none"
-					required
-				/>
-			</div>
-			<button
-				type="submit"
-				class="w-full rounded-lg bg-accent px-6 py-3 font-mono-app text-xs font-bold uppercase tracking-wider text-zinc-950 shadow-md transition hover:opacity-90 sm:w-auto"
-			>
-				send  <!-- This is the key line -->
-			</button>
-		</div>
+		></div>
 	</div>
 
-	<!-- RIGHT: Live Summary Sidebar (~30%) ----------------------------------- -->
-	<aside class="space-y-8 font-mono-app text-xs lg:col-span-1 lg:border-l lg:border-app lg:pl-12">
+	<!-- RIGHT: Live Summary Sidebar (~30%) — second grid column at lg+.
+	     Sticky so the preview stays in view while the user scrolls the
+	     long left column. `self-start` is required for sticky to behave
+	     inside a grid cell. -->
+	<aside
+		class="space-y-8 font-mono-app text-xs lg:col-span-1 lg:self-start lg:sticky lg:top-20 lg:border-l lg:border-app lg:pl-12"
+	>
 		<div class="space-y-1">
-			<div class="text-[10px] font-bold uppercase tracking-widest text-muted-app">
+			<div
+				class="text-[10px] font-bold uppercase tracking-widest text-muted-app"
+			>
 				System Preview
 			</div>
-			<div class="font-sans text-sm font-bold text-app">{hostname || '—'}</div>
+			<div class="font-sans text-sm font-bold text-app">
+				{hostname || "—"}
+			</div>
 		</div>
 
 		<div class="space-y-4">
 			<div class="flex justify-between border-b border-app/50 pb-2">
 				<span class="text-muted-app">Node Type:</span>
 				<span class="font-bold text-accent"
-					>{type === 'vm' ? 'VM (KVM)' : 'Container (LXC)'}</span
+					>{type === "vm" ? "VM (KVM)" : "Container (LXC)"}</span
 				>
 			</div>
 			<div class="flex justify-between border-b border-app/50 pb-2">
 				<span class="text-muted-app">Template:</span>
-				<span class="text-secondary-app">{os_template || '—'}</span>
+				<span class="text-secondary-app">{os_template || "—"}</span>
 			</div>
 			<div class="flex justify-between border-b border-app/50 pb-2">
 				<span class="text-muted-app">Group:</span>
@@ -796,53 +910,79 @@
 			</div>
 		</div>
 
-		<div class="space-y-2 rounded-lg border border-app/60 bg-elevated/10 p-4">
-			<div class="text-[10px] font-bold uppercase tracking-wider text-muted-app">
+		<div
+			class="space-y-2 rounded-lg border border-app/60 bg-elevated/10 p-4"
+		>
+			<div
+				class="text-[10px] font-bold uppercase tracking-wider text-muted-app"
+			>
 				Allocated Specs
 			</div>
 			<div class="flex justify-between">
-				<span>• CPU:</span><span class="font-bold text-app">{cpu} Cores</span>
+				<span>• CPU:</span><span class="font-bold text-app"
+					>{cpu} Cores</span
+				>
 			</div>
 			<div class="flex justify-between">
-				<span>• RAM:</span><span class="font-bold text-app">{ram} GB</span>
+				<span>• RAM:</span><span class="font-bold text-app"
+					>{ram} GB</span
+				>
 			</div>
 			<div class="flex justify-between">
-				<span>• Disk:</span><span class="font-bold text-app">{disk} GB</span>
+				<span>• Disk:</span><span class="font-bold text-app"
+					>{disk} GB</span
+				>
 			</div>
 		</div>
 
-		<div class="space-y-2 rounded-lg border border-app/60 bg-elevated/10 p-4">
-			<div class="text-[10px] font-bold uppercase tracking-wider text-muted-app">
+		<div
+			class="space-y-2 rounded-lg border border-app/60 bg-elevated/10 p-4"
+		>
+			<div
+				class="text-[10px] font-bold uppercase tracking-wider text-muted-app"
+			>
 				Network & Ports
 			</div>
 			<div class="flex justify-between">
 				<span>Access:</span>
-				<span class="text-secondary-app">{network_type === 'local' ? 'LOCAL' : 'PUBLIC'}</span>
+				<span class="text-secondary-app"
+					>{network_type === "local" ? "LOCAL" : "PUBLIC"}</span
+				>
 			</div>
 			<div class="flex justify-between gap-2">
 				<span>DNS:</span>
-				<span class="text-secondary-app">{dns_name || '—'}</span>
+				<span class="text-secondary-app">{dns_name || "—"}</span>
 			</div>
 			<div class="flex justify-between gap-2">
 				<span>Open Ports:</span>
 				<span class="font-bold text-accent">
-					{portsList.length ? portsList.join(', ') : 'None'}
+					{portsList.length ? portsList.join(", ") : "None"}
 				</span>
 			</div>
 		</div>
 
-		<div class="space-y-2 rounded-lg border border-app/60 bg-elevated/10 p-4">
-			<div class="text-[10px] font-bold uppercase tracking-wider text-muted-app">
+		<div
+			class="space-y-2 rounded-lg border border-app/60 bg-elevated/10 p-4"
+		>
+			<div
+				class="text-[10px] font-bold uppercase tracking-wider text-muted-app"
+			>
 				Lease Duration
 			</div>
 			<div class="flex justify-between">
-				<span>Start Date:</span><span class="text-secondary-app">{fmtDate(start_date)}</span>
+				<span>Start Date:</span><span class="text-secondary-app"
+					>{fmtDate(start_date)}</span
+				>
 			</div>
 			<div class="flex justify-between">
-				<span>End Date:</span><span class="font-bold text-accent">{fmtDate(end_date)}</span>
+				<span>End Date:</span><span class="font-bold text-accent"
+					>{fmtDate(end_date)}</span
+				>
 			</div>
 			<div class="flex justify-between">
-				<span>Duration:</span><span class="text-secondary-app">{leaseDays ?? '—'} days</span>
+				<span>Duration:</span><span class="text-secondary-app"
+					>{leaseDays ?? "—"} days</span
+				>
 			</div>
 		</div>
 
@@ -851,7 +991,34 @@
 			style="background-color: var(--accent-soft); border-color: color-mix(in oklab, var(--accent) 30%, transparent);"
 		>
 			<span class="text-muted-app">Instance Count:</span>
-			<span class="ml-1 font-mono-app text-sm font-bold text-accent">{pad3(quantity)}</span>
+
+			<span class="ml-1 font-mono-app text-sm font-bold text-accent"
+				>{pad3(quantity)}</span
+			>
+		</div>
+		<div class="flex items-center gap-4">
+			<label
+				for="quantity"
+				class="text-xs font-medium uppercase tracking-wider text-secondary-app font-mono-app"
+			>
+				Quantity
+			</label>
+			<input
+				id="quantity"
+				type="number"
+				name="quantity"
+				bind:value={quantity}
+				min="1"
+				max="10"
+				class="w-16 rounded-lg border border-app bg-elevated p-1.5 text-center font-mono-app text-sm font-bold text-accent focus:border-strong-app focus:outline-none"
+				required
+			/>
+			<button
+				type="submit"
+				class="w-full rounded-lg bg-accent px-6 py-3 font-mono-app text-xs font-bold uppercase tracking-wider text-zinc-950 shadow-md transition hover:opacity-90 sm:w-auto"
+			>
+				send <!-- This is the key line -->
+			</button>
 		</div>
 	</aside>
 </form>
