@@ -29,13 +29,13 @@ The UI is bilingual by design. Body copy that users actually read is in Thai; th
 You'll need a PocketBase instance the dev server can reach. Copy `.env.example` to `.env` and fill in:
 
 ```
-POCKETBASE_URL=https://db.cskmitl.com
-VITE_POCKETBASE_URL=https://db.cskmitl.com
+POCKETBASE_URL=
+VITE_POCKETBASE_URL=
 PB_ADMIN_EMAIL=...
 PB_ADMIN_PASSWORD=...
 GOOGLE_OAUTH_CLIENT_ID=...
 GOOGLE_OAUTH_CLIENT_SECRET=...
-GOOGLE_OAUTH_REDIRECT_URI=https://db.cskmitl.com/api/oauth2-redirect
+GOOGLE_OAUTH_REDIRECT_URI=
 ```
 
 `VITE_POCKETBASE_URL` must be the URL the browser actually hits — PocketBase bakes it into the OAuth redirect, so private IPs (`192.168.x`, `10.x`, `localhost`) will be rejected by Google. If you want to develop against a local PB, put it behind a tunnel (Cloudflare quick tunnel, ngrok, etc.) and use that URL here.
