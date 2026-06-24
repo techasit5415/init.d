@@ -12,6 +12,7 @@ import type {
 	NetworkType,
 	PassionGroupRef
 } from '$lib/types';
+import { fetchPresets } from '$lib/presets';
 
 const TYPES: InstanceType[] = ['vm', 'container'];
 const NETWORKS: NetworkType[] = ['local', 'public'];
@@ -28,20 +29,24 @@ function asInt(v: FormDataEntryValue | null, fallback: number): number {
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) throw redirect(303, '/login');
 
-	let passionGroups: PassionGroupRef[] = [];
-	try {
-		const list = await locals.pb.collection('passion_group').getList<PassionGroupRef>(1, 200, {
-			sort: 'name',
-			fields: 'id,name'
-		});
-		passionGroups = list.items;
-	} catch {
-		// passion_group collection might not be reachable; show empty list
-	}
+	// Fetch passion groups and the template catalog in parallel — both
+	// are independent reads, so there's no reason to serialise them.
+	const [passionGroups, presets] = await Promise.all([
+		locals.pb
+			.collection('passion_group')
+			.getList<PassionGroupRef>(1, 200, {
+				sort: 'name',
+				fields: 'id,name'
+			})
+			.then((r) => r.items)
+			.catch(() => [] as PassionGroupRef[]),
+		fetchPresets(locals.pb)
+	]);
 
 	return {
 		email: locals.user.email,
 		passionGroups,
+		presets,
 		defaults: {
 			type: 'vm' as InstanceType,
 			network_type: 'local' as NetworkType,
