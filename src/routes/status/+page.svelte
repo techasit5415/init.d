@@ -37,7 +37,7 @@
 
 {#if data.items.length === 0}
 	<div
-		class="rounded-lg border border-dashed border-app bg-surface p-12 text-center transition-colors duration-300"
+		class="rounded-lg border border-dashed border-app bg-surface p-8 text-center transition-colors duration-300 sm:p-12"
 	>
 		<Inbox class="mx-auto h-8 w-8 text-muted-app" />
 		<p class="mt-3 font-mono text-xs uppercase tracking-widest text-muted-app">
@@ -54,8 +54,118 @@
 		</a>
 	</div>
 {:else}
-	<div class="overflow-hidden rounded-lg border border-app bg-surface transition-colors duration-300">
-		<table class="w-full text-left">
+	<!-- Mobile cards (below md) — same data as the table but stacked.
+	     Easier to read on a phone than a horizontally-scrolled table. -->
+	<div class="space-y-3 md:hidden">
+		{#each data.items as item (item.id)}
+			{@const isOpen = expanded === item.id}
+			<div class="rounded-lg border border-app bg-surface transition-colors duration-300">
+				<button
+					type="button"
+					onclick={() => (expanded = isOpen ? null : item.id)}
+					aria-expanded={isOpen}
+					class="flex w-full items-start gap-3 p-4 text-left"
+				>
+					<div class="mt-0.5 text-muted-app">
+						{#if isOpen}
+							<ChevronDown class="h-4 w-4" />
+						{:else}
+							<ChevronRight class="h-4 w-4" />
+						{/if}
+					</div>
+					<div class="min-w-0 flex-1 space-y-1">
+						<div class="flex items-start justify-between gap-2">
+							<span class="truncate font-mono-app text-sm text-app">{item.hostname}</span>
+							<StatusBadge status={item.status} />
+						</div>
+						<div class="font-mono-app text-xs text-muted-app">{item.os_template}</div>
+						<div class="flex flex-wrap gap-x-3 gap-y-1 font-mono-app text-xs">
+							<span class="inline-flex items-center gap-1 text-app">
+								<Cpu class="h-3 w-3 text-muted-app" />
+								<span class="text-accent">{item.specs.cpu}</span>C
+							</span>
+							<span class="inline-flex items-center gap-1 text-app">
+								<MemoryStick class="h-3 w-3 text-muted-app" />
+								<span class="text-accent">{item.specs.ram}</span>G
+							</span>
+							<span class="inline-flex items-center gap-1 text-app">
+								<HardDrive class="h-3 w-3 text-muted-app" />
+								<span class="text-accent">{item.specs.disk}</span>G
+							</span>
+							<span class="text-muted-app">×{item.quantity}</span>
+						</div>
+					</div>
+				</button>
+				{#if isOpen}
+					<div class="space-y-4 border-t border-app p-4 text-xs">
+						<div>
+							<p class="font-mono text-[11px] uppercase tracking-widest text-muted-app">
+								Type
+							</p>
+							<p class="mt-0.5 font-mono-app text-app">
+								{item.type} · {item.network_type}
+							</p>
+						</div>
+						<div>
+							<p class="font-mono text-[11px] uppercase tracking-widest text-muted-app">
+								Lease
+							</p>
+							<p class="mt-0.5 flex items-center gap-1 font-mono-app text-app">
+								<Calendar class="h-3 w-3 text-muted-app" />
+								{fmt(item.start_date)} → {fmt(item.end_date)}
+							</p>
+						</div>
+						{#if item.dns_name}
+							<div>
+								<p class="font-mono text-[11px] uppercase tracking-widest text-muted-app">
+									Network
+								</p>
+								<p class="mt-0.5 break-all font-mono-app text-secondary-app">
+									{item.dns_name}
+								</p>
+							</div>
+						{/if}
+						<div>
+							<p class="font-mono text-[11px] uppercase tracking-widest text-muted-app">
+								Open ports
+							</p>
+							<p class="mt-1 flex flex-wrap gap-1.5 font-mono-app">
+								{#each portsFor(item.ports) as port (port)}
+									<span class="rounded border border-app bg-surface px-2 py-0.5 text-accent">
+										{port}
+									</span>
+								{:else}
+									<span class="text-secondary-app">—</span>
+								{/each}
+							</p>
+						</div>
+						<div>
+							<p class="font-mono text-[11px] uppercase tracking-widest text-muted-app">
+								Group
+							</p>
+							<p class="mt-0.5 font-mono-app text-app">{passionGroupName(item)}</p>
+						</div>
+						<div>
+							<p class="font-mono text-[11px] uppercase tracking-widest text-muted-app">
+								Purpose notes
+							</p>
+							<p class="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-secondary-app">
+								{item.purpose_notes}
+							</p>
+						</div>
+					</div>
+				{/if}
+			</div>
+		{/each}
+	</div>
+
+	<!-- Table for md and up. The wrapper carries overflow-x-auto so
+	     extra-wide cells (long hostnames, long DNS) scroll inside the
+	     card rather than blowing out the page layout. -->
+	<div
+		class="hidden overflow-x-auto rounded-lg border border-app bg-surface transition-colors duration-300 md:block"
+	>
+		<table class="w-full min-w-[860px] text-left">
 			<thead>
 				<tr class="border-b border-app text-muted-app">
 					<th class="w-8"></th>
@@ -142,7 +252,7 @@
 										<p class="mt-1 font-mono-app text-sm text-app">
 											{item.network_type}
 										</p>
-										<p class="mt-1 font-mono-app text-sm text-secondary-app">
+										<p class="mt-1 break-all font-mono-app text-sm text-secondary-app">
 											{item.dns_name || '—'}
 										</p>
 									</div>

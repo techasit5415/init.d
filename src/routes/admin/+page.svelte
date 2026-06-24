@@ -163,7 +163,10 @@
 		</div>
 	{:else}
 		<div class="overflow-x-auto rounded-xl border border-app bg-surface shadow-2xl">
-			<table class="w-full border-collapse text-left text-sm">
+			<!-- min-w forces the columns to keep their proportions on
+			     narrow screens — the user can scroll horizontally inside
+			     the card rather than fight a squished layout. -->
+			<table class="w-full min-w-[760px] border-collapse text-left text-sm">
 				<thead>
 					<tr
 						class="border-b border-app bg-elevated font-mono-app text-xs uppercase tracking-wider text-muted-app"

@@ -31,9 +31,9 @@
 	]);
 </script>
 
-<section class="py-12">
+<section class="py-8 sm:py-12">
 	<p class="font-mono text-xs uppercase tracking-[0.2em] text-accent">// init.d</p>
-	<h1 class="mt-3 text-4xl font-semibold tracking-tight text-app">
+	<h1 class="mt-3 text-3xl font-semibold tracking-tight text-app sm:text-4xl">
 		Infrastructure provisioning, written down before it is built.
 	</h1>
 	<p class="mt-4 max-w-2xl text-secondary-app">
