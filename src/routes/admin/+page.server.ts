@@ -38,5 +38,35 @@ export const actions: Actions = {
 			console.error('resolve failed', e);
 			return fail(500, { error: 'Could not update instance.' });
 		}
+	},
+	reply: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') throw error(403, 'Admin only.');
+
+		const fd = await request.formData();
+		const id = String(fd.get('id') ?? '');
+		const clear = fd.get('clear') === '1';
+		const reply = String(fd.get('reply') ?? '').trim();
+
+		if (!id) return fail(400, { error: 'Missing id.' });
+
+		// Clearing empties both fields. Sending empty `reply` without the
+		// `clear` flag is treated as a no-op rather than a save — the
+		// textarea would otherwise wipe a real reply if the user clicked
+		// Save with an empty field by mistake.
+		const patch = clear
+			? { admin_reply: '', admin_reply_at: null }
+			: reply.length > 0
+				? { admin_reply: reply, admin_reply_at: new Date().toISOString() }
+				: null;
+		if (!patch) return fail(400, { error: 'Reply is empty.' });
+		if (!clear && reply.length > 4096) return fail(400, { error: 'Reply too long.' });
+
+		try {
+			await locals.pb.collection('instances').update(id, patch);
+			return { ok: true, id, cleared: clear };
+		} catch (e) {
+			console.error('reply failed', e);
+			return fail(500, { error: 'Could not save reply.' });
+		}
 	}
 };

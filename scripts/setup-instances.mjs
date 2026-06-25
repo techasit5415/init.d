@@ -123,6 +123,8 @@ async function ensureInstances() {
 				maxSelect: 1,
 				values: ['pending', 'completed']
 			},
+			{ name: 'admin_reply', type: 'text', required: false, options: { max: 4096 } },
+			{ name: 'admin_reply_at', type: 'date', required: false },
 			{ name: 'created', type: 'autodate', onCreate: true, onUpdate: false },
 			{ name: 'updated', type: 'autodate', onCreate: true, onUpdate: true }
 		],

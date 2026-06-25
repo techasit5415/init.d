@@ -55,6 +55,8 @@ const pgCollection = await pb.collections.getOne('passion_group').catch(() => nu
 const fields = [...collection.fields];
 const hasCreated = fields.some((f) => f.name === 'created');
 const hasUpdated = fields.some((f) => f.name === 'updated');
+const hasAdminReply = fields.some((f) => f.name === 'admin_reply');
+const hasAdminReplyAt = fields.some((f) => f.name === 'admin_reply_at');
 const pgField = fields.find((f) => f.name === 'passion_group');
 
 if (!hasCreated) {
@@ -74,6 +76,23 @@ if (!hasUpdated) {
 		onUpdate: true
 	});
 	console.log('[add] updated');
+}
+if (!hasAdminReply) {
+	fields.push({
+		name: 'admin_reply',
+		type: 'text',
+		required: false,
+		options: { max: 4096 }
+	});
+	console.log('[add] admin_reply');
+}
+if (!hasAdminReplyAt) {
+	fields.push({
+		name: 'admin_reply_at',
+		type: 'date',
+		required: false
+	});
+	console.log('[add] admin_reply_at');
 }
 if (pgField && pgField.type !== 'relation' && pgCollection) {
 	pgField.type = 'relation';

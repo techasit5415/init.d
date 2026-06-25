@@ -11,8 +11,8 @@ The app is the intake side only. It writes rows into PocketBase; whatever eventu
 Sign in with your `@cskmitl.com` Google account, then:
 
 - **`/request`** — the submission form. Pick `vm` or `container`, fill in CPU/RAM/disk, dates, optional DNS prefix, open ports, pick a passion group. There's a **Quick Preset** picker at the top that auto-fills from a catalog (try typing `nginx` or `postgres`). Picking a `Develop`-flagged preset triggers an "unstable, not for production" banner.
-- **`/status`** — your own requests, expanded inline so you can see the full record.
-- **`/admin`** — every request across all users, with a live PocketBase stream. New rows and edits show up without a refresh. Scoped to `user_type.type = "admin"`.
+- **`/status`** — your own requests, expanded inline so you can see the full record. Live PocketBase stream — when admins add a reply, edit one, or resolve a request, it shows up here without a refresh.
+- **`/admin`** — every request across all users, with a live PocketBase stream. New rows and edits show up without a refresh. Each row carries a `Reply` action: click it to leave a note for the requester (or edit/clear an existing one). Resolving still works the same way. Scoped to `user_type.type = "admin"`.
 
 The UI is bilingual by design. Body copy that users actually read is in Thai; the code-y labels (`// INFRASTRUCTURE_QUEUE`, `send`, `PROVISION_NEW_INSTANCE`) stay in English. Two themes — **midnight** (default, amber accent) and **light** — toggleable from the navbar.
 
@@ -65,6 +65,8 @@ node scripts/seed-templates.mjs
 ```
 
 All three are idempotent — re-running them just updates existing rows. The PocketBase JS migration for `instances` lives in [`pb_migrations/`](pb_migrations/1700000000_create_instances.js); if you'd rather drive collection creation through `pocketbase migrate up`, that does the same job.
+
+If you're upgrading an existing PB and don't want to re-run the migration, [`scripts/patch-instances.mjs`](scripts/patch-instances.mjs) is the easier path — it adds any fields the collection is missing (including `admin_reply` / `admin_reply_at`) without touching rows that already exist.
 
 [`scripts/seed-templates.mjs`](scripts/seed-templates.mjs) is the interesting one. It pulls the sitemap from community-scripts.org, then for each slug fetches the matching shell script from GitHub:
 

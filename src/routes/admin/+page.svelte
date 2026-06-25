@@ -5,13 +5,28 @@
 	import { passionGroupName } from '$lib/types';
 	import { untrack } from 'svelte';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: { error?: string; id?: string } | null } = $props();
 
 	// Live list — starts from the SSR snapshot and grows as the realtime
 	// subscription fires. The snapshot is captured once on mount; further
 	// mutations flow in via the subscription handler.
 	let items = $state<LeaseInstance[]>(untrack(() => [...data.items]));
 	let connectionState = $state<'connecting' | 'live' | 'offline'>('connecting');
+
+	// Per-row reply editor state. `replyOpen` is the id of the row whose
+	// composer is open (null when none). `replyDraft` holds the textarea
+	// contents while editing.
+	let replyOpen = $state<string | null>(null);
+	let replyDraft = $state<string>('');
+
+	function openReply(item: LeaseInstance) {
+		replyDraft = item.admin_reply ?? '';
+		replyOpen = item.id;
+	}
+	function cancelReply() {
+		replyOpen = null;
+		replyDraft = '';
+	}
 
 	const stats = $derived({
 		total: items.length,
@@ -180,6 +195,7 @@
 				<tbody>
 					{#each items as item (item.id)}
 						{@const isPending = item.status === 'pending'}
+						{@const isEditing = replyOpen === item.id}
 						<tr
 							class="border-b border-app transition-colors last:border-0 {isPending
 								? 'bg-accent-soft hover:bg-elevated'
@@ -291,7 +307,91 @@
 							</td>
 
 							<!-- Action column -->
-							<td class="p-4 text-right">
+							<td class="space-y-3 p-4 text-right">
+								<!-- Reply block — independent of status, so admins
+								     can leave a note on either pending or resolved
+								     rows. The composer opens inline beneath the row
+								     summary and pre-fills with the existing reply
+								     when one is already saved. -->
+								<div class="text-left">
+									{#if !isEditing && item.admin_reply}
+										<div class="rounded border border-app bg-elevated p-2">
+											<div
+												class="font-mono-app text-[10px] font-bold uppercase text-muted-app"
+											>
+												Reply_Sent
+											</div>
+											<div
+												class="mt-0.5 whitespace-pre-wrap font-mono-app text-xs leading-relaxed text-secondary-app"
+											>
+												{item.admin_reply}
+											</div>
+											{#if item.admin_reply_at}
+												<div
+													class="mt-1 font-mono-app text-[10px] text-muted-app"
+												>
+													{fmt(item.admin_reply_at)}
+												</div>
+											{/if}
+										</div>
+										<div class="mt-1 flex justify-end gap-1.5">
+											<button
+												type="button"
+												onclick={() => openReply(item)}
+												class="rounded border border-app bg-surface px-2 py-0.5 font-mono-app text-[10px] font-bold uppercase tracking-wider text-secondary-app transition hover:bg-elevated hover:text-app"
+											>
+												Edit
+											</button>
+											<form method="POST" action="?/reply" class="inline">
+												<input type="hidden" name="id" value={item.id} />
+												<input type="hidden" name="clear" value="1" />
+												<button
+													type="submit"
+													class="rounded border border-app bg-surface px-2 py-0.5 font-mono-app text-[10px] font-bold uppercase tracking-wider text-secondary-app transition hover:bg-elevated hover:text-app"
+												>
+													Clear
+												</button>
+											</form>
+										</div>
+									{:else if isEditing}
+										<form method="POST" action="?/reply" class="space-y-1.5">
+											<input type="hidden" name="id" value={item.id} />
+											<textarea
+												name="reply"
+												bind:value={replyDraft}
+												rows="3"
+												maxlength="4096"
+												placeholder="พิมพ์ข้อความถึงผู้ขอ เช่น กำลังเตรียม VM อยู่ คาดว่าพร้อมใช้ภายใน 1 ชม."
+												class="w-full rounded border border-app bg-surface p-2 font-mono-app text-xs text-app placeholder:text-muted-app focus:border-accent focus:outline-none"
+											></textarea>
+											<div class="flex justify-end gap-1.5">
+												<button
+													type="button"
+													onclick={cancelReply}
+													class="rounded border border-app bg-surface px-2 py-0.5 font-mono-app text-[10px] font-bold uppercase tracking-wider text-secondary-app transition hover:bg-elevated hover:text-app"
+												>
+													Cancel
+												</button>
+												<button
+													type="submit"
+													disabled={replyDraft.trim().length === 0}
+													class="rounded bg-accent px-2 py-0.5 font-mono-app text-[10px] font-bold uppercase tracking-wider text-zinc-950 shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+												>
+													{item.admin_reply ? 'Update' : 'Send'}
+												</button>
+											</div>
+										</form>
+									{:else}
+										<button
+											type="button"
+											onclick={() => openReply(item)}
+											class="rounded border border-app bg-surface px-2.5 py-1 font-mono-app text-[10px] font-bold uppercase tracking-wider text-secondary-app transition hover:bg-elevated hover:text-app"
+										>
+											Reply
+										</button>
+									{/if}
+								</div>
+
 								{#if isPending}
 									<form method="POST" action="?/resolve" class="inline">
 										<input type="hidden" name="id" value={item.id} />
@@ -308,6 +408,12 @@
 									>
 										Synced_Ok
 									</span>
+								{/if}
+
+								{#if form?.error && form?.id === item.id}
+									<p class="text-right font-mono-app text-[10px] text-(--danger)">
+										{form.error}
+									</p>
 								{/if}
 							</td>
 						</tr>

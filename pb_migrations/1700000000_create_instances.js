@@ -40,7 +40,9 @@ migrate(
 				{ name: 'start_date', type: 'date', required: true },
 				{ name: 'end_date', type: 'date', required: true },
 				{ name: 'quantity', type: 'number', required: true, options: { min: 1, max: 64, noDecimal: true } },
-				{ name: 'status', type: 'select', required: true, maxSelect: 1, values: ['pending', 'completed'] }
+				{ name: 'status', type: 'select', required: true, maxSelect: 1, values: ['pending', 'completed'] },
+				{ name: 'admin_reply', type: 'text', required: false, options: { max: 4096 } },
+				{ name: 'admin_reply_at', type: 'date', required: false }
 			],
 			indexes: [
 				'CREATE INDEX idx_creator_email ON instances (creator_email)',
