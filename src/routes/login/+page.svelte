@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { LogIn, AlertCircle, User, Lock } from '@lucide/svelte';
-	import { pbBrowser } from '$lib/pb.client';
+	import { pbBrowser } from '$lib/pb/client';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();

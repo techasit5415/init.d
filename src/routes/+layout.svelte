@@ -11,9 +11,28 @@
 	<title>init.d — infrastructure provisioning</title>
 </svelte:head>
 
-<div class="min-h-screen bg-app text-app transition-colors duration-300">
+<div class="relative min-h-screen bg-app text-app transition-colors duration-300 overflow-x-hidden">
+	<!-- Ambient Background Glows -->
+	<div 
+		class="pointer-events-none absolute top-0 left-1/2 -z-10 h-[350px] w-full max-w-[1200px] -translate-x-1/2 opacity-20 blur-[100px] transition-opacity duration-300"
+		style="background: radial-gradient(circle at top, var(--accent), transparent 70%);"
+	></div>
+	
+	<!-- Fine Grid Mesh Overlay -->
+	<div 
+		class="pointer-events-none absolute inset-0 -z-20 opacity-30"
+		style="
+			background-image: 
+				linear-gradient(to right, var(--border) 1px, transparent 1px),
+				linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+			background-size: 24px 24px;
+			mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, #000 70%, transparent 100%);
+			-webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, #000 70%, transparent 100%);
+		"
+	></div>
+
 	<Navbar />
-	<main class="mx-auto max-w-[1400px] px-6 py-10">
+	<main class="relative mx-auto max-w-[1400px] px-6 py-10">
 		{@render children()}
 	</main>
 </div>
