@@ -30,7 +30,6 @@ export const createCT = async ( detail: any) => {
             memory: detail.memory,
             net0: detail.net0,
             rootfs: detail.rootfs,
-            password: detail.password,
             start: true,
             ostemplate: ''
         });
@@ -54,7 +53,7 @@ export const createVM = async (detail: any) => {
             ide2: detail.ide2,
             boot: detail.boot,
             bootdisk: detail.bootdisk,
-            password: detail.password,
+            cipassword: detail.password,
             start: true,
         });
         return response;
