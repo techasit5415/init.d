@@ -40,6 +40,10 @@ export interface LeaseInstance {
 	end_date: string;
 	quantity: number;
 	status: LeaseStatus;
+	// Optional admin reply shown back on /status. Populated by admins from
+	// the `/admin` dashboard; users never set these directly.
+	admin_reply?: string;
+	admin_reply_at?: string;
 }
 
 export function passionGroupName(item: LeaseInstance): string {

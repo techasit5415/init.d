@@ -92,7 +92,11 @@ function transform(record: RawTemplateRecord): Preset | null {
  */
 export async function fetchPresets(pb: PocketBase): Promise<Preset[]> {
 	try {
-		const list = await pb.collection('templates').getList<RawTemplateRecord>(1, 200, {
+		// 1000 covers the full community-scripts catalog with room to grow
+		// before we have to think about pagination. PB returns totalItems
+		// either way, so this is just about the page size, not the visible
+		// row count.
+		const list = await pb.collection('templates').getList<RawTemplateRecord>(1, 1000, {
 			sort: 'name',
 			fields:
 				'slug,name,type,os_template,default_cpu,default_ram,default_disk,default_network,default_ports,description,category,source_url,logo_url,status'

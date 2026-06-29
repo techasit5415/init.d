@@ -2,7 +2,7 @@
 // Resolves the authenticated `users` record into `event.locals.user`.
 
 import type { Handle } from '@sveltejs/kit';
-import { createPb } from '$lib/pb';
+import { createPb } from '$lib/pb/server';
 import type { UserRole } from '$lib/types';
 
 interface UserTypeRef {
