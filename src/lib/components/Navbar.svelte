@@ -51,6 +51,7 @@
 		>
 			<Server class="h-4 w-4 text-accent" />
 			<span class="font-semibold">init.d</span>
+			<span class=" text-xs text-zinc-500 mt-7 ">พบปัญหา ติดต่อ 66050160@kmitl.ac.th หรือ bornzi</span>
 			<!-- Brand suffix only shows from md up — keeps the row from
 			     getting crowded on phones where every pixel counts. -->
 			<!-- <span class="hidden text-muted-app md:inline">/ infrastructure provisioning</span> -->

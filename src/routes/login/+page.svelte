@@ -150,4 +150,5 @@
 			Sign in
 		</button>
 	</form>
+	<p class="text-center text-xs text-zinc-500">พบปัญหา ติดต่อ 66050160@kmitl.ac.th หรือ bornzi</p>
 </div>
