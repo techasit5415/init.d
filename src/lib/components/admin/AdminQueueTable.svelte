@@ -2,17 +2,25 @@
 	import type { LeaseInstance } from '$lib/types';
 	import { passionGroupName } from '$lib/types';
 
+	type Props = {
+		items: LeaseInstance[];
+		form: { error?: string; id?: string; recordId?: string } | null;
+		provisioning?: boolean;
+	};
+
 	let {
 		items = [],
-		form
-	}: {
-		items: LeaseInstance[];
-		form: { error?: string; id?: string } | null;
-	} = $props();
+		form,
+		provisioning = false
+	}: Props = $props();
 
 	// Per-row reply editor state
 	let replyOpen = $state<string | null>(null);
 	let replyDraft = $state<string>('');
+	let provisionOpen = $state<string | null>(null);
+	let provisionNode = $state('pve3');
+	let provisionNetwork = $state('vmbr0');
+	let provisionId = $state('');
 
 	function openReply(item: LeaseInstance) {
 		replyDraft = item.admin_reply ?? '';
@@ -21,6 +29,20 @@
 	function cancelReply() {
 		replyOpen = null;
 		replyDraft = '';
+	}
+
+	function openProvision(item: LeaseInstance) {
+		provisionOpen = item.id;
+		provisionNode = 'pve3';
+		provisionNetwork = item.network_type === 'public' ? 'vmbr1' : 'vmbr0';
+		provisionId = '';
+	}
+
+	function cancelProvision() {
+		provisionOpen = null;
+		provisionNode = 'pve3';
+		provisionNetwork = 'vmbr0';
+		provisionId = '';
 	}
 
 	const portsFor = (s: string | undefined) =>
@@ -58,7 +80,7 @@
 	</div>
 {:else}
 	<div class="overflow-x-auto rounded-xl border border-app bg-surface shadow-2xl">
-		<table class="w-full min-w-[760px] border-collapse text-left text-sm">
+		<table class="w-full min-w-190 border-collapse text-left text-sm">
 			<thead>
 				<tr class="border-b border-app bg-elevated font-mono-app text-xs uppercase tracking-wider text-muted-app">
 					<th class="p-4 font-medium">Instance Specs & Details</th>
@@ -110,6 +132,71 @@
 								<div class="text-sm {isPending ? 'text-app' : 'text-muted-app'}">
 									{passionGroupName(item)}
 								</div>
+
+								{#if provisioning}
+									{#if provisionOpen === item.id}
+										<form method="POST" action="?/create" class="mt-2 space-y-2 rounded border border-app bg-elevated p-2 text-left">
+											<input type="hidden" name="recordId" value={item.id} />
+											<div class="grid gap-2 sm:grid-cols-3">
+												<label class="space-y-1">
+													<span class="font-mono-app text-[10px] uppercase tracking-wider text-muted-app">node</span>
+													<input
+														name="node"
+														bind:value={provisionNode}
+														required
+														class="w-full rounded border border-app bg-surface px-2 py-1 font-mono-app text-xs text-app focus:border-accent focus:outline-none"
+														placeholder="pve3"
+													/>
+												</label>
+												<label class="space-y-1">
+													<span class="font-mono-app text-[10px] uppercase tracking-wider text-muted-app">network</span>
+													<input
+														name="network"
+														bind:value={provisionNetwork}
+														required
+														class="w-full rounded border border-app bg-surface px-2 py-1 font-mono-app text-xs text-app focus:border-accent focus:outline-none"
+														placeholder="vmbr0"
+													/>
+												</label>
+												<label class="space-y-1">
+													<span class="font-mono-app text-[10px] uppercase tracking-wider text-muted-app">id</span>
+													<input
+														name="id"
+														type="number"
+														min="1"
+														bind:value={provisionId}
+														required
+														class="w-full rounded border border-app bg-surface px-2 py-1 font-mono-app text-xs text-app focus:border-accent focus:outline-none"
+														placeholder="101"
+													/>
+												</label>
+											</div>
+											<div class="flex justify-end gap-1.5">
+												<button
+													type="button"
+													onclick={cancelProvision}
+													class="rounded border border-app bg-surface px-2 py-0.5 font-mono-app text-[10px] font-bold uppercase tracking-wider text-secondary-app transition hover:bg-elevated hover:text-app"
+												>
+													Cancel
+												</button>
+												<button
+													type="submit"
+													class="rounded bg-accent px-2 py-0.5 font-mono-app text-[10px] font-bold uppercase tracking-wider text-zinc-950 shadow-sm transition hover:opacity-90"
+												>
+													Create
+												</button>
+											</div>
+										</form>
+									{:else}
+										<button
+											type="button"
+											onclick={() => openProvision(item)}
+											class="rounded border border-app bg-surface px-2.5 py-1 font-mono-app text-[10px] font-bold uppercase tracking-wider text-secondary-app transition hover:bg-elevated hover:text-app"
+										>
+											Resolve
+										</button>
+									{/if}
+								{/if}
 								<div class="font-mono-app text-xs text-muted-app">
 									{item.creator_email}
 								</div>
@@ -130,7 +217,7 @@
 								Zone: <span class="font-bold {isPending ? 'text-app' : 'text-muted-app'}">{item.network_type === 'local' ? 'LOCAL IP' : 'PUBLIC'}</span>
 							</div>
 							{#if item.dns_name}
-								<div class="max-w-[180px] truncate text-muted-app">
+								<div class="max-w-45 truncate text-muted-app">
 									DNS: <span class="{isPending ? 'text-secondary-app underline' : 'text-muted-app'}">{item.dns_name}</span>
 								</div>
 							{/if}
@@ -235,6 +322,12 @@
 								<span class="inline-flex items-center rounded-md border border-app bg-elevated px-2.5 py-1 font-mono-app text-xs text-muted-app">
 									Synced_Ok
 								</span>
+							{/if}
+
+							{#if form?.error && form?.recordId === item.id}
+								<p class="text-right font-mono-app text-[10px]" style="color: var(--danger)">
+									{form.error}
+								</p>
 							{/if}
 
 							{#if form?.error && form?.id === item.id}
