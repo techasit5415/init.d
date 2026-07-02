@@ -97,6 +97,17 @@ input[readonly] {
 	cursor: not-allowed;
 }
 
+/* Reset padding and borders for range inputs so the thumb slides all the way to the edges */
+input[type="range"] {
+	padding: 0;
+	border: none;
+	background: none;
+	box-shadow: none;
+}
+input[type="range"]:focus {
+	box-shadow: none;
+}
+
 /* Custom scrollbar — industrial ------------------------------------------- */
 ::-webkit-scrollbar {
 	width: 10px;
