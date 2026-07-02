@@ -24,22 +24,71 @@
 	// server-side defaults. We use `untrack` because the form fields are
 	// intentionally a one-time copy of `data.defaults`; the user's typing
 	// should not be invalidated by reactive prop churn.
-	let passion_group = $state("");
-	let type = $state<"vm" | "container">(untrack(() => data.defaults.type));
-	let hostname = $state("");
-	let os_template = $state(untrack(() => "ubuntu-24.04"));
-	let cpu = $state(untrack(() => data.defaults.cpu));
-	let ram = $state(untrack(() => data.defaults.ram));
-	let disk = $state(untrack(() => data.defaults.disk));
-	let network_type = $state<"local" | "public">(
-		untrack(() => data.defaults.network_type),
+	let passion_group = $state(
+		untrack(() => data.editRecord?.passion_group ?? ""),
 	);
-	let dnsPrefix = $state("");
-	let ports = $state("");
-	let purpose_notes = $state("");
-	let start_date = $state(untrack(() => today));
-	let end_date = $state(untrack(() => inThirtyDays));
-	let quantity = $state(untrack(() => data.defaults.quantity));
+	let type = $state<"vm" | "container">(
+		untrack(() => data.editRecord?.type ?? data.defaults.type),
+	);
+	let hostname = $state(untrack(() => data.editRecord?.hostname ?? ""));
+	let os_template = $state(
+		untrack(() => data.editRecord?.os_template ?? "ubuntu-24.04"),
+	);
+	let cpu = $state(
+		untrack(() => data.editRecord?.specs?.cpu ?? data.defaults.cpu),
+	);
+	let ram = $state(
+		untrack(() => data.editRecord?.specs?.ram ?? data.defaults.ram),
+	);
+	let disk = $state(
+		untrack(() => data.editRecord?.specs?.disk ?? data.defaults.disk),
+	);
+	let network_type = $state<"local" | "public">(
+		untrack(
+			() => data.editRecord?.network_type ?? data.defaults.network_type,
+		),
+	);
+	let dnsPrefix = $state(
+		untrack(() => {
+			if (data.editRecord?.dns_name) {
+				if (data.editRecord.dns_name.endsWith(DNS_SUFFIX)) {
+					return data.editRecord.dns_name.slice(
+						0,
+						-DNS_SUFFIX.length,
+					);
+				}
+				return data.editRecord.dns_name;
+			}
+			return "";
+		}),
+	);
+	let ports = $state(untrack(() => data.editRecord?.ports ?? ""));
+	let purpose_notes = $state(
+		untrack(() => data.editRecord?.purpose_notes ?? ""),
+	);
+	let start_date = $state(
+		untrack(() => {
+			if (data.editRecord?.start_date) {
+				return new Date(data.editRecord.start_date)
+					.toISOString()
+					.slice(0, 10);
+			}
+			return today;
+		}),
+	);
+	let end_date = $state(
+		untrack(() => {
+			if (data.editRecord?.end_date) {
+				return new Date(data.editRecord.end_date)
+					.toISOString()
+					.slice(0, 10);
+			}
+			return inThirtyDays;
+		}),
+	);
+	let quantity = $state(
+		untrack(() => data.editRecord?.quantity ?? data.defaults.quantity),
+	);
 
 	let selectedPreset = $state("");
 
@@ -139,11 +188,16 @@
 	<!-- LEFT: form fields (~70%) -------------------------------------------- -->
 	<div class="space-y-10 lg:col-span-2">
 		<!-- Header -->
+		{#if data.editRecord}
+			<input type="hidden" name="id" value={data.editRecord.id} />
+		{/if}
 		<div class="space-y-2">
 			<h1
 				class="font-mono-app text-xl font-medium tracking-tight text-app"
 			>
-				// PROVISION_NEW_INSTANCE
+				{data.editRecord
+					? "// EDIT_INSTANCE_REQUEST"
+					: "// PROVISION_NEW_INSTANCE"}
 			</h1>
 			<p class="text-sm text-secondary-app">
 				ระบุข้อมูลสเปคระบบ ช่วงเวลา และวัตถุประสงค์เพื่อบันทึกคำขอลง
@@ -298,41 +352,74 @@
 			<!-- Spec sliders -->
 			<div class="space-y-5 pt-2">
 				<div class="space-y-2">
-					<div class="flex justify-between font-mono-app text-xs">
+					<div
+						class="flex justify-between items-center font-mono-app text-xs"
+					>
 						<span class="text-muted-app">CPU Cores</span>
-						<span class="font-bold text-accent">{cpu} Cores</span>
+						<div class="flex items-center gap-1.5">
+							<input
+								type="number"
+								min="1"
+								max="32"
+								bind:value={cpu}
+								class="w-16 rounded border border-app bg-elevated px-1.5 py-0.5 text-right font-bold text-accent focus:border-strong-app focus:outline-none"
+							/>
+							<span class="font-bold text-accent">Cores</span>
+						</div>
 					</div>
 					<input
 						type="range"
 						name="cpu"
 						min="1"
-						max="100"
+						max="16"
 						bind:value={cpu}
 						style="accent-color: var(--accent)"
-						class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-elevated"
+						class="h-1.5 w-full cursor-pointer rounded-lg bg-elevated"
 						required
 					/>
 				</div>
 				<div class="space-y-2">
-					<div class="flex justify-between font-mono-app text-xs">
+					<div
+						class="flex justify-between items-center font-mono-app text-xs"
+					>
 						<span class="text-muted-app">Memory (RAM)</span>
-						<span class="font-bold text-accent">{ram} GB</span>
+						<div class="flex items-center gap-1.5">
+							<input
+								type="number"
+								min="1"
+								max="16"
+								bind:value={ram}
+								class="w-16 rounded border border-app bg-elevated px-1.5 py-0.5 text-right font-bold text-accent focus:border-strong-app focus:outline-none"
+							/>
+							<span class="font-bold text-accent">GB</span>
+						</div>
 					</div>
 					<input
 						type="range"
 						name="ram"
 						min="1"
-						max="128"
+						max="24"
 						bind:value={ram}
 						style="accent-color: var(--accent)"
-						class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-elevated"
+						class="h-1.5 w-full cursor-pointer rounded-lg bg-elevated"
 						required
 					/>
 				</div>
 				<div class="space-y-2">
-					<div class="flex justify-between font-mono-app text-xs">
+					<div
+						class="flex justify-between items-center font-mono-app text-xs"
+					>
 						<span class="text-muted-app">Storage (Disk)</span>
-						<span class="font-bold text-accent">{disk} GB</span>
+						<div class="flex items-center gap-1.5">
+							<input
+								type="number"
+								min="1"
+								max="16384"
+								bind:value={disk}
+								class="w-20 rounded border border-app bg-elevated px-1.5 py-0.5 text-right font-bold text-accent focus:border-strong-app focus:outline-none"
+							/>
+							<span class="font-bold text-accent">GB</span>
+						</div>
 					</div>
 					<input
 						type="range"
@@ -341,7 +428,7 @@
 						max="1000"
 						bind:value={disk}
 						style="accent-color: var(--accent)"
-						class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-elevated"
+						class="h-1.5 w-full cursor-pointer rounded-lg bg-elevated"
 						required
 					/>
 				</div>
@@ -542,6 +629,6 @@
 		{end_date}
 		{leaseDays}
 		bind:quantity
+		isEdit={!!data.editRecord}
 	/>
 </form>
-

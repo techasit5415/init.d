@@ -167,6 +167,25 @@
 								{item.purpose_notes}
 							</p>
 						</div>
+						{#if item.status === 'pending'}
+							<div class="mt-4 flex gap-2 border-t border-app pt-4">
+								<a
+									href="/request?edit={item.id}"
+									class="inline-flex h-8 items-center justify-center rounded bg-elevated border border-app px-3 font-mono text-[11px] uppercase tracking-wider text-app transition-colors duration-200 hover:border-strong-app hover:text-accent"
+								>
+									Edit
+								</a>
+								<form method="POST" action="?/cancel" onsubmit={(e) => { if (!confirm('คุณต้องการยกเลิกคำขอนี้ใช่หรือไม่?')) e.preventDefault(); }}>
+									<input type="hidden" name="id" value={item.id} />
+									<button
+										type="submit"
+										class="inline-flex h-8 items-center justify-center rounded bg-elevated border border-app px-3 font-mono text-[11px] uppercase tracking-wider text-secondary-app transition-colors duration-200 hover:border-strong-app hover:text-[var(--danger)]"
+									>
+										Cancel
+									</button>
+								</form>
+							</div>
+						{/if}
 					</div>
 				{/if}
 			</div>
@@ -309,6 +328,25 @@
 										{item.purpose_notes}
 									</p>
 								</div>
+								{#if item.status === 'pending'}
+									<div class="mt-5 border-t border-app pt-4 flex gap-2">
+										<a
+											href="/request?edit={item.id}"
+											class="inline-flex h-8 items-center justify-center rounded bg-elevated border border-app px-3 font-mono text-[11px] uppercase tracking-wider text-app transition-colors duration-200 hover:border-strong-app hover:text-accent"
+										>
+											Edit
+										</a>
+										<form method="POST" action="?/cancel" onsubmit={(e) => { if (!confirm('คุณต้องการยกเลิกคำขอนี้ใช่หรือไม่?')) e.preventDefault(); }}>
+											<input type="hidden" name="id" value={item.id} />
+											<button
+												type="submit"
+												class="inline-flex h-8 items-center justify-center rounded bg-elevated border border-app px-3 font-mono text-[11px] uppercase tracking-wider text-secondary-app transition-colors duration-200 hover:border-strong-app hover:text-[var(--danger)]"
+											>
+												Cancel
+											</button>
+										</form>
+									</div>
+								{/if}
 							</td>
 						</tr>
 					{/if}

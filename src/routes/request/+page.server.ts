@@ -13,6 +13,8 @@ import type {
 	PassionGroupRef
 } from '$lib/types';
 import { fetchPresets } from '$lib/presets';
+import PocketBase from 'pocketbase';
+import { env } from '$env/dynamic/private';
 
 const TYPES: InstanceType[] = ['vm', 'container'];
 const NETWORKS: NetworkType[] = ['local', 'public'];
@@ -26,8 +28,25 @@ function asInt(v: FormDataEntryValue | null, fallback: number): number {
 	return Number.isFinite(n) ? Math.trunc(n) : fallback;
 }
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
 	if (!locals.user) throw redirect(303, '/login');
+
+	const editId = url.searchParams.get('edit');
+	let editRecord: LeaseInstance | null = null;
+	if (editId) {
+		try {
+			editRecord = await locals.pb.collection('instances').getOne<LeaseInstance>(editId);
+			if (editRecord.creator_email !== locals.user.email && locals.user.role !== 'admin') {
+				throw error(403, 'Unauthorized');
+			}
+			if (editRecord.status !== 'pending') {
+				throw error(400, 'Only pending requests can be edited.');
+			}
+		} catch (e) {
+			console.error('Failed to load record for edit:', e);
+			throw error(404, 'Lease request not found.');
+		}
+	}
 
 	// Fetch passion groups and the template catalog in parallel — both
 	// are independent reads, so there's no reason to serialise them.
@@ -47,6 +66,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		email: locals.user.email,
 		passionGroups,
 		presets,
+		editRecord,
 		defaults: {
 			type: 'vm' as InstanceType,
 			network_type: 'local' as NetworkType,
@@ -64,6 +84,7 @@ export const actions: Actions = {
 
 		const fd = await request.formData();
 
+		const editId = asString(fd.get('id'));
 		const passion_group = asString(fd.get('passion_group'));
 		const type = asString(fd.get('type')) as InstanceType;
 		const hostname = asString(fd.get('hostname')).toLowerCase();
@@ -111,6 +132,7 @@ export const actions: Actions = {
 			return fail(400, {
 				errors,
 				values: {
+					id: editId,
 					passion_group,
 					type,
 					hostname,
@@ -137,6 +159,7 @@ export const actions: Actions = {
 			return fail(400, {
 				errors,
 				values: {
+					id: editId,
 					passion_group,
 					type,
 					hostname,
@@ -153,22 +176,57 @@ export const actions: Actions = {
 			});
 		}
 
-		const record = await locals.pb.collection('instances').create<LeaseInstance>({
-			creator_email: locals.user.email,
-			passion_group,
-			type,
-			hostname,
-			os_template,
-			specs: { cpu, ram, disk },
-			network_type,
-			dns_name,
-			ports,
-			purpose_notes,
-			start_date: new Date(start_date).toISOString(),
-			end_date: new Date(end_date).toISOString(),
-			quantity,
-			status: 'pending'
-		});
+		let record: LeaseInstance;
+		if (editId) {
+			try {
+				const existing = await locals.pb.collection('instances').getOne<LeaseInstance>(editId);
+				if (existing.creator_email !== locals.user.email && locals.user.role !== 'admin') {
+					return fail(403, { errors: { global: 'Unauthorized' } });
+				}
+				if (existing.status !== 'pending') {
+					return fail(400, { errors: { global: 'Only pending requests can be updated.' } });
+				}
+				
+				const pbAdmin = new PocketBase(env.POCKETBASE_URL);
+				pbAdmin.autoCancellation(false);
+				await pbAdmin.admins.authWithPassword(env.PB_ADMIN_EMAIL, env.PB_ADMIN_PASSWORD);
+				
+				record = await pbAdmin.collection('instances').update<LeaseInstance>(editId, {
+					passion_group,
+					type,
+					hostname,
+					os_template,
+					specs: { cpu, ram, disk },
+					network_type,
+					dns_name,
+					ports,
+					purpose_notes,
+					start_date: new Date(start_date).toISOString(),
+					end_date: new Date(end_date).toISOString(),
+					quantity
+				});
+			} catch (e) {
+				console.error('Update failed:', e);
+				return fail(500, { errors: { global: 'Failed to update request.' } });
+			}
+		} else {
+			record = await locals.pb.collection('instances').create<LeaseInstance>({
+				creator_email: locals.user.email,
+				passion_group,
+				type,
+				hostname,
+				os_template,
+				specs: { cpu, ram, disk },
+				network_type,
+				dns_name,
+				ports,
+				purpose_notes,
+				start_date: new Date(start_date).toISOString(),
+				end_date: new Date(end_date).toISOString(),
+				quantity,
+				status: 'pending'
+			});
+		}
 
 		throw redirect(303, `/status#${record.id}`);
 	}
